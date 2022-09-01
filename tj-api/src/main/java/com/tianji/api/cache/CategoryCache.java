@@ -1,0 +1,81 @@
+package com.tianji.api.cache;
+
+import cn.hutool.core.thread.ThreadUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.tianji.api.client.course.CategoryClient;
+import com.tianji.api.dto.course.CategoryBasicDTO;
+import com.tianji.common.utils.CollUtils;
+import lombok.RequiredArgsConstructor;
+
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.stream.Collectors;
+
+@RequiredArgsConstructor
+public class CategoryCache {
+
+    private final Cache<String, Map<Long, CategoryBasicDTO>> categoryCaches;
+
+    private final CategoryClient categoryClient;
+
+   /* @PostConstruct
+    public void init(){
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            private volatile boolean flag = true;
+            @Override
+            public void run() {
+                while (flag) {
+                    try {
+                        getCategoryMap();
+                    } catch (Exception e) {
+                        ThreadUtil.sleep(10000);
+                        continue;
+                    }
+                    // 取消任务
+                    flag = false;
+                }
+            }
+        }, 0L);
+    }
+*/
+    public Map<Long, CategoryBasicDTO> getCategoryMap() {
+        return categoryCaches.get("CATEGORY", key -> {
+            // 1.从CategoryClient查询
+            List<CategoryBasicDTO> list = categoryClient.getAllOfOneLevel();
+            if(list == null || list.isEmpty()){
+                return CollUtils.emptyMap();
+            }
+            // 2.转换数据
+            return list.stream().collect(Collectors.toMap(CategoryBasicDTO::getId, c -> c));
+        });
+    }
+
+    public String getCategoryNames(List<Long> ids) {
+        if (ids == null || ids.size() == 0) {
+            return "";
+        }
+        // 1.读取分类缓存
+        Map<Long, CategoryBasicDTO> map = getCategoryMap();
+        // 2.根据id查询分类名称并组装
+        StringBuilder sb = new StringBuilder();
+        for (Long id : ids) {
+            sb.append(map.get(id).getName()).append("/");
+        }
+        // 3.返回结果
+        return sb.deleteCharAt(sb.length() - 1).toString();
+    }
+
+    public List<CategoryBasicDTO> queryCategoryByIds(List<Long> ids) {
+        if (ids == null || ids.size() == 0) {
+            return CollUtils.emptyList();
+        }
+        Map<Long, CategoryBasicDTO> map = getCategoryMap();
+        return ids.stream()
+                .map(map::get)
+                .collect(Collectors.toList());
+    }
+}

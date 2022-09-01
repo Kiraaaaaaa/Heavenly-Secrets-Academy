@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.tianji.api.config.RequestIdRelayConfiguration, \
+  com.tianji.api.config.RoleCacheConfig, \
+  com.tianji.api.config.CategoryCacheConfig
