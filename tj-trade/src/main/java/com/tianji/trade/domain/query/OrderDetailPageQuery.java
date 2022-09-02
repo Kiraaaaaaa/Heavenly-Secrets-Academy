@@ -25,9 +25,9 @@ public class OrderDetailPageQuery extends PageQuery {
     @ApiModelProperty("手机号")
     private String mobile;
     @ApiModelProperty("下单开始时间")
-    @DateTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
+    @sinceTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
     private LocalDateTime orderStartTime;
     @ApiModelProperty("下单结束时间")
-    @DateTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
+    @sinceTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
     private LocalDateTime orderEndTime;
 }

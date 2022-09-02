@@ -12,9 +12,9 @@ import java.lang.reflect.Field;
  * 更新wrapper {@link LambdaUpdateWrapper}
  *
  * @ClassName SqlWrapperUtils
- * @Author wusongsong
- * @Date 2022/7/14 11:43
- * @Version
+ * @author wusongsong
+ * @since 2022/7/14 11:43
+ * @version 1.0.0
  **/
 public class SqlWrapperUtils {
 

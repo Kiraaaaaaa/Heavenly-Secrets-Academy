@@ -28,5 +28,5 @@ public class CourseVO {
 
     public static final String[] EXCLUDE_FIELDS =
             {"categoryIdLv1", "categoryIdLv2", "categoryIdLv3", "free",
-                    "publishTime","updateTime", "type", "status", "score", "updater"};
+                    "publishTime", "type", "status", "score"};
 }

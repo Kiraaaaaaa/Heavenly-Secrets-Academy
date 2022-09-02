@@ -18,8 +18,8 @@ public interface ICourseTeacherService extends IService<CourseTeacher> {
 
     /**
      * 查询老师课程信息
-     * @param couserId
-     * @return
+     * @param couserId 课程id
+     * @return 教师信息
      */
     List<CourseTeacherVO> queryTeachers(Long couserId);
 
@@ -27,8 +27,8 @@ public interface ICourseTeacherService extends IService<CourseTeacher> {
 
     /**
      * 根据课程id获取老师id列表，并且排序
-     * @param courseId
-     * @return
+     * @param courseId 课程id
+     * @return 教师信息
      */
     List<Long> getTeacherIdOfCourse(Long courseId);
 

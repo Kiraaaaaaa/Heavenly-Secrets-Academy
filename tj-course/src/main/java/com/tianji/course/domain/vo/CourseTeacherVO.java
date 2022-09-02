@@ -6,13 +6,12 @@ import lombok.Data;
 
 /**
  * 课程相关老师信息
- * @ClassName CourseTeacherVO
- * @Author wusongsong
- * @Date 2022/7/11 18:17
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 18:17
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("老师课程信息")
+@ApiModel(description = "老师课程信息")
 public class CourseTeacherVO {
     @ApiModelProperty("老师课程关系id")
     private Long id;

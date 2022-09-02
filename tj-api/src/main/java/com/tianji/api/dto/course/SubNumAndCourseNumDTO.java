@@ -10,9 +10,9 @@ import javax.validation.constraints.NotNull;
 /**
  * 老师负责的课程数和出题数目的集合
  * @ClassName SubNumAndCourseNumDTO
- * @Author wusongsong
- * @Date 2022/7/18 15:12
- * @Version
+ * @author wusongsong
+ * @since 2022/7/18 15:12
+ * @version 1.0.0
  **/
 @Data
 @AllArgsConstructor

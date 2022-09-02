@@ -6,13 +6,12 @@ import lombok.Data;
 
 /**
  * 三级分类
- * @ClassName CateSimpleInfoVO
- * @Author wusongsong
- * @Date 2022/7/11 20:59
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 20:59
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("分类")
+@ApiModel(description = "分类")
 public class CateSimpleInfoVO {
     @ApiModelProperty("一级分类")
     private Long firstCateId;

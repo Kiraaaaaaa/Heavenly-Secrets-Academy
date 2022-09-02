@@ -10,13 +10,12 @@ import java.util.List;
 /**
  * 题目详情
  *
- * @ClassName SubjectInfoVO
- * @Author wusongsong
- * @Date 2022/7/11 20:54
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 20:54
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("题目详情")
+@ApiModel(description = "题目详情")
 public class SubjectInfoVO {
     @ApiModelProperty("题目id")
     private Long id;
@@ -32,8 +31,6 @@ public class SubjectInfoVO {
     private Integer score;
 
     private LocalDateTime updateTime;
-    @ApiModelProperty("课程名称信息")
-    private List<CourseSimpleInfoVO> courses;
 
     @ApiModelProperty("选项")
     private List<String> options;
@@ -43,6 +40,5 @@ public class SubjectInfoVO {
     private String analysis;
     @ApiModelProperty("课程id列表")
     private List<Long> courseIds;
-
 
 }

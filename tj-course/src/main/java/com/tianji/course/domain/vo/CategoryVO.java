@@ -8,12 +8,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * @ClassName CategoryVO
- * @Author wusongsong
- * @Date 2022/7/10 11:32
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 11:32
+ * @version 1.0.0
  **/
-@ApiModel("课程分类信息")
+@ApiModel(description = "课程分类信息")
 @Data
 public class CategoryVO {
     @ApiModelProperty("课程分类id")
@@ -40,6 +39,4 @@ public class CategoryVO {
     private Integer level;
     @ApiModelProperty("子分类列表")
     private List<CategoryVO> children;
-
-
 }

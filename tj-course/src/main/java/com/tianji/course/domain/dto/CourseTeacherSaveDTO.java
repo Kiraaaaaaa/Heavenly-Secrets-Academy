@@ -11,13 +11,12 @@ import java.util.List;
 
 /**
  * 保存老师课程关系
- * @ClassName CourseTeacherSaveDTO
- * @Author wusongsong
- * @Date 2022/7/13 14:59
- * @Version
+ * @author wusongsong
+ * @since 2022/7/13 14:59
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程老师关系模型")
+@ApiModel(description = "课程老师关系模型")
 public class CourseTeacherSaveDTO {
     @ApiModelProperty("课程id")
     @NotNull(message = CourseErrorInfo.Msg.COURSE_TEACHER_SAVE_COURSE_ID_NULL)
@@ -29,7 +28,7 @@ public class CourseTeacherSaveDTO {
     private List<TeacherInfo> teachers;
 
     @Data
-    @ApiModel("老师id和用户端是否显示")
+    @ApiModel(description = "老师id和用户端是否显示的标示")
     public static class TeacherInfo{
         @ApiModelProperty("老师id")
         @NotNull(message = CourseErrorInfo.Msg.COURSE_TEACHER_SAVE_TEACHER_ID_NULL)

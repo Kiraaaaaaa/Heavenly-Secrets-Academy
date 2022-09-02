@@ -33,16 +33,16 @@ public interface ISubjectService extends IService<Subject> {
 
     /**
      * 批量获取老师的出题数量
-     * @param teacherIds
-     * @return
+     * @param teacherIds 教师id
+     * @return 老师出题数量
      */
     Map<Long, Long> countSubjectNumOfTeacher(List<Long> teacherIds);
 
     /**
      * 根据小节或考试id获取考试题目
      *
-     * @param cataId
-     * @return
+     * @param cataId 目录id
+     * @return 该目录（小节）下的考试题
      */
     List<SubjectSimpleVO> queryByCataId(Long cataId);
 }

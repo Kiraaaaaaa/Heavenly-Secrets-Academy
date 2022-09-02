@@ -1,13 +1,15 @@
 package com.tianji.search.controller;
 
+import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.search.domain.query.CoursePageQuery;
-import com.tianji.search.domain.vo.CourseAdminVO;
 import com.tianji.search.domain.vo.CourseVO;
 import com.tianji.search.service.ISearchService;
-import com.tianji.common.domain.dto.PageDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
@@ -20,12 +22,6 @@ public class CourseController {
 
     @Resource
     private ISearchService searchService;
-
-    @ApiOperation("管理端课程搜索接口")
-    @GetMapping("/admin")
-    public PageDTO<CourseAdminVO> queryCoursesForAdmin(CoursePageQuery query){
-        return searchService.queryCoursesForAdmin(query);
-    }
 
     @ApiOperation("用户端课程搜索接口")
     @GetMapping("/portal")

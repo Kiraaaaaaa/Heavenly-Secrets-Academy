@@ -10,7 +10,9 @@ import com.tianji.trade.domain.vo.OrderDetailAdminVO;
 import com.tianji.trade.domain.vo.OrderDetailPageVO;
 import com.tianji.trade.domain.vo.OrderProgressNodeVO;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -34,9 +36,13 @@ public interface IOrderDetailService extends IService<OrderDetail> {
 
     List<OrderProgressNodeVO> packageProgressNodes(Order order, RefundApply refundApply);
 
-    void markDetailSuccessByOrderId(Long id, String payChannel);
+    void markDetailSuccessByOrderId(Long id, String payChannel, LocalDateTime successTime);
 
     void updateRefundStatusById(Long orderDetailId, int status);
 
     List<Long> queryCourseIdsByOrderId(Long orderId);
+
+    Boolean checkCourseOrderInfo(Long courseId);
+
+    Map<Long, Integer> countEnrollNumOfCourse(List<Long> courseIdList);
 }

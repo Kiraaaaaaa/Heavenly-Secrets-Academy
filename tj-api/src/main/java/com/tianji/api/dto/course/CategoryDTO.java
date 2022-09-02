@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
 
 /**
  * @ClassName CategoryDTO
- * @Author wusongsong
- * @Date 2022/7/21 14:51
- * @Version
+ * @author wusongsong
+ * @since 2022/7/21 14:51
+ * @version 1.0.0
  **/
 @Data
 @ApiModel("课程分类")

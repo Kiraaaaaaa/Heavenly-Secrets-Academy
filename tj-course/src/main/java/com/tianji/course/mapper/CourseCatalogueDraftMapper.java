@@ -16,7 +16,7 @@ import java.util.List;
  */
 public interface CourseCatalogueDraftMapper extends BaseMapper<CourseCatalogueDraft> {
 
-    String COLUMNS = "id, name, trailer, course_id, type, parent_catalogue_id, media_id, video_id, video_name, living_start_time, living_end_time, play_back, c_index, media_duration, dep_id, create_time, update_time, creater, updater,can_update";
+    String COLUMNS = "id, name, trailer, course_id, type, parent_catalogue_id, media_id, video_id, video_name, living_start_time, living_end_time, play_back, c_index, media_duration, dep_id, create_time, update_time, creater, updater";
     /**
      * 查询出需要更新到架上的目录数据
      */
@@ -30,7 +30,7 @@ public interface CourseCatalogueDraftMapper extends BaseMapper<CourseCatalogueDr
     int deleteByCourseId(@Param("courseId") Long couseId, @Param("types")List<Integer> types);
 
 
-    @Insert("insert into course_catalogue_draft(" + COLUMNS + ") " +
+    @Insert("insert into course_catalogue_draft(" + COLUMNS + ",can_update) " +
             "(select " + COLUMNS + ",0 from course_catalogue where course_id=#{courseId})" )
     int insertFromCourseCatalogue(@Param("courseId") Long courseId);
 }

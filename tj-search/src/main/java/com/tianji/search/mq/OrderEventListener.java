@@ -22,7 +22,7 @@ public class OrderEventListener {
     private ICourseService courseService;
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "queue.order.pay", durable = "true"),
+            value = @Queue(name = "order.pay.queue", durable = "true"),
             exchange = @Exchange(name = ORDER_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = ORDER_PAY_KEY
     ))
@@ -34,7 +34,7 @@ public class OrderEventListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "queue.order.refund", durable = "true"),
+            value = @Queue(name = "order.refund.queue", durable = "true"),
             exchange = @Exchange(name = ORDER_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = ORDER_REFUND_KEY
     ))

@@ -1,28 +1,27 @@
 package com.tianji.course.controller;
 
 import com.tianji.api.dto.course.*;
-import com.tianji.api.dto.course.CourseInfoDTO;
 import com.tianji.common.utils.CollUtils;
+import com.tianji.course.service.ICategoryService;
 import com.tianji.course.service.ICourseCatalogueService;
 import com.tianji.course.service.ICourseDraftService;
 import com.tianji.course.service.ICourseService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 内部服务接口调用
  *
  * @ClassName CourseInfoController
- * @Author wusongsong
- * @Date 2022/7/18 15:19
- * @Version
+ * @author wusongsong
+ * @since 2022/7/18 15:19
+ * @version 1.0.0
  **/
 @RestController
 @RequestMapping("course")
@@ -37,6 +36,9 @@ public class CourseInfoController {
 
     @Autowired
     private ICourseDraftService courseDraftService;
+
+    @Autowired
+    private ICategoryService categoryService;
 
     @GetMapping("infoByTeacherIds")
     @ApiOperation("通过老师id获取老师负责的课程和出的题目数量")
@@ -71,44 +73,30 @@ public class CourseInfoController {
         return courseCatalogueService.countMediaUserInfo(mediaIds);
     }
 
-    @GetMapping("/getSearchInfo/{id}")
-    @ApiOperation("获取课程检索信息，状态发生变化时")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "draft", value = "是否获取草稿，待上架的课程获取课程的草稿信息，其他状态获取已上架信息"),
-            @ApiImplicitParam(name = "id", value = "课程id")
-    })
-    public CourseDTO getSearchInfo(@PathVariable("id") Long id, @RequestParam("draft") Boolean draft) {
-        if (draft) {
-            return courseDraftService.getCourseDTOById(id);
-        } else {
-            return courseService.getCourseDTOById(id);
-        }
+    @GetMapping("/{id}/searchInfo")
+    @ApiOperation("课程上架时，需要查询课程信息，加入索引库")
+    public CourseSearchDTO getSearchInfo(@ApiParam("课程id") @PathVariable("id") Long id) {
+        return courseService.getCourseDTOById(id);
     }
-
-    @GetMapping("/checkCoursePurchase")
-    @ApiOperation("校验课程是否可以购买，并且返回课程信息")
-    public List<CoursePurchaseInfoDTO> checkCoursePurchase(@RequestParam("courseIds") List<Long> courseIds) {
-        return courseService.checkCoursePurchase(courseIds);
-    }
-
-    @PostMapping("/finished")
-    @ApiOperation("课程完结任务")
-    public Integer courseFinished() {
-        return courseService.courseFinished();
-    }
-
 
     @GetMapping("/{id}")
     @ApiOperation("获取课程信息")
-    @ApiImplicitParams(
-            @ApiImplicitParam(name = "id", value = "获取课程信息")
-    )
-    public CourseInfoDTO getById(@PathVariable("id") Long id) {
-        return courseService.getInfoById(id);
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "获取课程信息"),
+            @ApiImplicitParam(name = "withCatalogue", value = "是否要查询目录信息"),
+            @ApiImplicitParam(name = "withTeachers", value = "是否查询课程老师信息")
+    })
+    public CourseFullInfoDTO getById(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "withCatalogue", required = false) boolean withCatalogue,
+            @RequestParam(value = "withTeachers", required = false) boolean withTeachers) {
+        return courseService.getInfoById(id, withCatalogue, withTeachers);
     }
-    @GetMapping("/queryCourseInfosByIds")
-    @ApiOperation("根据课程id查询课程信息")
-    public List<CourseInfoDTO> queryCourseInfosByIds(@RequestParam("ids") List<Long> ids) {
-        return courseService.queryCourseInfosByIds(ids);
+
+
+    @GetMapping("/getCateNameMap")
+    @ApiIgnore
+    public Map<Long, String> queryByThirdCateIds(@RequestParam("thirdCateIdList") List<Long> thirdCateIdList) {
+        return categoryService.queryByThirdCateIds(thirdCateIdList);
     }
 }

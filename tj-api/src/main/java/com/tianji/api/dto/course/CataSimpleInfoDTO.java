@@ -4,10 +4,9 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
- * @ClassName CataSimpleInfoDTO
- * @Author wusongsong
- * @Date 2022/7/27 14:22
- * @Version
+ * @author wusongsong
+ * @since 2022/7/27 14:22
+ * @version 1.0.0
  **/
 @Data
 public class CataSimpleInfoDTO {

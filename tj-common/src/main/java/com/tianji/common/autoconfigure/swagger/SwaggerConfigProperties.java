@@ -7,9 +7,9 @@ import java.io.Serializable;
 
 /**
  * @ClassName SwaggerConfigProperties
- * @Author wusongsong
- * @Date 2022/6/27 13:47
- * @Version
+ * @author wusongsong
+ * @since 2022/6/27 13:47
+ * @version 1.0.0
  **/
 @Data
 @ConfigurationProperties(prefix = "tj.swagger")

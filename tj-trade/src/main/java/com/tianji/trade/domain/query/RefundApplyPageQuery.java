@@ -26,9 +26,9 @@ public class RefundApplyPageQuery extends PageQuery {
     @ApiModelProperty("学员手机号")
     private String mobile;
     @ApiModelProperty("申请开始时间")
-    @DateTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
+    @sinceTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
     private LocalDateTime applyStartTime;
     @ApiModelProperty("申请结束时间")
-    @DateTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
+    @sinceTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
     private LocalDateTime applyEndTime;
 }

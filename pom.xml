@@ -20,6 +20,7 @@
         <module>tj-learning</module>
         <module>tj-pay</module>
         <module>tj-trade</module>
+        <module>tj-exam</module>
     </modules>
     <packaging>pom</packaging>
 

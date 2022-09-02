@@ -1,39 +1,46 @@
 package com.tianji.course.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.api.client.order.OrderClient;
+import com.tianji.api.client.user.UserClient;
+import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.*;
+import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.constants.MqConstants;
+import com.tianji.common.domain.dto.PageDTO;
+import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.exceptions.DbException;
-import com.tianji.common.utils.BeanUtils;
-import com.tianji.common.utils.CollUtils;
-import com.tianji.common.utils.NumberUtils;
-import com.tianji.common.utils.StringUtils;
+import com.tianji.common.utils.*;
 import com.tianji.course.constants.CourseErrorInfo;
-import com.tianji.course.constants.CourseStatus;
 import com.tianji.course.domain.dto.CourseSimpleInfoListDTO;
-import com.tianji.course.domain.dto.IdAndNumDTO;
+import com.tianji.api.dto.IdAndNumDTO;
+import com.tianji.course.domain.po.Category;
 import com.tianji.course.domain.po.Course;
 import com.tianji.course.domain.po.CourseDraft;
 import com.tianji.course.domain.po.CourseTeacher;
-import com.tianji.course.domain.vo.CataSimpleInfoVO;
-import com.tianji.course.domain.vo.CataVO;
-import com.tianji.course.domain.vo.CourseSimpleInfoVO;
-import com.tianji.course.mapper.*;
+import com.tianji.course.domain.query.CoursePageQuery;
+import com.tianji.course.domain.vo.CoursePageVO;
+import com.tianji.course.mapper.CourseDraftMapper;
+import com.tianji.course.mapper.CourseMapper;
+import com.tianji.course.mapper.CourseTeacherMapper;
 import com.tianji.course.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -50,6 +57,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> implements ICourseService {
 
+
     @Autowired
     private CourseTeacherMapper courseTeacherMapper;
 
@@ -57,7 +65,6 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     private CourseDraftMapper courseDraftMapper;
 
     @Autowired
-    @Lazy
     private ICourseDraftService courseDraftService;
 
     @Autowired
@@ -70,12 +77,19 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     private RabbitMqHelper rabbitMqHelper;
 
     @Autowired
-    @Lazy
     private ICourseCatalogueService courseCatalogueService;
 
     @Autowired
-    @Lazy
     private ICourseTeacherService courseTeacherService;
+
+    @Autowired
+    private ICategoryService categoryService;
+
+    @Autowired
+    private UserClient userClient;
+
+    @Autowired
+    private OrderClient orderClient;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
@@ -91,32 +105,40 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     }
 
     @Override
-    public CourseDTO getCourseDTOById(Long id) {
+    public CourseSearchDTO getCourseDTOById(Long id) {
+        // 1.查询课程信息
         Course course = baseMapper.selectById(id);
         if (course == null) {
             return null;
         }
         LambdaQueryWrapper<CourseTeacher> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(CourseTeacher::getCourseId, id)
-                .orderBy(true, false, CourseTeacher::getCIndex)
+                .orderByDesc(CourseTeacher::getCIndex)
                 .last(true, "limit 1");
+        // 2.查询教师信息
         List<CourseTeacher> courseTeachers = courseTeacherMapper.selectList(queryWrapper);
 
-        CourseDTO courseDTO = BeanUtils.toBean(course, CourseDTO.class);
-        courseDTO.setCategoryIdLv1(course.getFirstCateId());
-        courseDTO.setCategoryIdLv2(course.getSecondCateId());
-        courseDTO.setCategoryIdLv3(course.getThirdCateId());
-        courseDTO.setDuration(course.getMediaDuration());
-        courseDTO.setPublishTime(course.getCreateTime());
-        courseDTO.setSections(course.getSectionNum());
+        // 3.数据封装
+        CourseSearchDTO courseSearchDTO = BeanUtils.toBean(course, CourseSearchDTO.class);
+        courseSearchDTO.setCategoryIdLv1(course.getFirstCateId());
+        courseSearchDTO.setCategoryIdLv2(course.getSecondCateId());
+        courseSearchDTO.setCategoryIdLv3(course.getThirdCateId());
+        courseSearchDTO.setPublishTime(course.getCreateTime());
+        courseSearchDTO.setSections(course.getSectionNum());
         if (CollUtils.isNotEmpty(courseTeachers)) {
-            courseDTO.setTeacher(courseTeachers.get(0).getTeacherId());
+            courseSearchDTO.setTeacher(courseTeachers.get(0).getTeacherId());
         } else {
-            courseDTO.setTeacher(0L);
+            courseSearchDTO.setTeacher(0L);
         }
 
-
-        return courseDTO;
+        // 4.统计课程销量
+        Map<Long, Integer> peoNumOfCourseMap = orderClient.countEnrollNumOfCourse(CollUtils.singletonList(id));
+        if (CollUtils.isNotEmpty(peoNumOfCourseMap)) {
+            courseSearchDTO.setSold(peoNumOfCourseMap.getOrDefault(id, 0));
+        }
+        // TODO 5.课程评分，先随机生成，后期再做数据统计
+        courseSearchDTO.setScore(40 + RandomUtils.randomInt(10));
+        return courseSearchDTO;
 
     }
 
@@ -131,7 +153,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     }
 
     @Override
-    public List<CourseSimpleInfoVO> getSimpleInfoList(CourseSimpleInfoListDTO courseSimpleInfoListDTO) {
+    public List<CourseSimpleInfoDTO> getSimpleInfoList(CourseSimpleInfoListDTO courseSimpleInfoListDTO) {
 
         LambdaQueryWrapper<Course> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(CollUtils.isNotEmpty(courseSimpleInfoListDTO.getThirdCataIds()),
@@ -139,10 +161,9 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
                 .in(CollUtils.isNotEmpty(courseSimpleInfoListDTO.getIds()),
                         Course::getId, courseSimpleInfoListDTO.getIds());
         List<Course> courses = baseMapper.selectList(queryWrapper);
-        return BeanUtils.copyList(courses, CourseSimpleInfoVO.class);
+        return BeanUtils.copyList(courses, CourseSimpleInfoDTO.class);
     }
 
-    @Override
     public List<CoursePurchaseInfoDTO> checkCoursePurchase(List<Long> courseIds) {
         if (CollUtils.isEmpty(courseIds)) {
             return new ArrayList<>();
@@ -160,11 +181,11 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         //校验课程是否可以购买，并且返回课程信息
 
         return BeanUtils.copyList(courses, CoursePurchaseInfoDTO.class, (course, coursePurchaseInfo) -> {
-            if (course.getStatus() == CourseStatus.DOWN_SHELF.getStatus()) { //课程已经下架
+            if (course.getStatus() == CourseStatus.DOWN_SHELF.getValue()) { //课程已经下架
                 //课程已经下架
                 throw new BizIllegalException(course.getName() + CourseErrorInfo.Msg.COURSE_CHECK_DOWN_SHELF);
             }
-            if (course.getStatus() == CourseStatus.FINISHED.getStatus() ||
+            if (course.getStatus() == CourseStatus.FINISHED.getValue() ||
                     course.getPurchaseEndTime().isBefore(LocalDateTime.now())) {
                 //课程已经完结
                 throw new BizIllegalException(course.getName() + CourseErrorInfo.Msg.COURSE_CHECK_FINISHED);
@@ -211,7 +232,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     public int courseFinished() {
         LambdaQueryWrapper<Course> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.le(Course::getPurchaseEndTime, LocalDateTime.now())
-                .in(Course::getStatus, List.of(CourseStatus.DOWN_SHELF.getStatus(), CourseStatus.SHELF.getStatus()));
+                .in(Course::getStatus, List.of(CourseStatus.DOWN_SHELF.getValue(), CourseStatus.SHELF.getValue()));
         List<Course> courses = baseMapper.selectList(queryWrapper);
         if (CollUtils.isEmpty(courses)) {
             return 0;
@@ -220,7 +241,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         for (Course course : courses) {
             Course updateCourse = new Course();
             updateCourse.setId(course.getId());
-            updateCourse.setStatus(CourseStatus.FINISHED.getStatus());
+            updateCourse.setStatus(CourseStatus.FINISHED.getValue());
             updateCourses.add(updateCourse);
         }
 
@@ -260,56 +281,79 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         return baseMapper.selectCount(queryWrapper);
     }
 
-    public List<CourseInfoDTO> queryCourseInfosByIds(List<Long> ids) {
-        if (CollUtils.isEmpty(ids)) {
-            return new ArrayList<>();
+    @Override
+    public CourseFullInfoDTO getInfoById(Long id, boolean withCatalogue, boolean withTeachers) {
+        // 1.查询课程基本信息
+        Course course = baseMapper.selectById(id);
+        if (course == null) {
+            throw new BadRequestException(CourseErrorInfo.Msg.COURSE_CHECK_NOT_EXISTS);
         }
-        LambdaQueryWrapper<Course> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Course::getId, ids);
-        List<Course> courses = baseMapper.selectList(queryWrapper);
-        if (CollUtils.isEmpty(courses)) {
-            return new ArrayList<>();
-        }
-        //课程分类id
-        Set<Long> cataIds = new HashSet<>();
-        for (Course course : courses) {
-            cataIds.add(course.getFirstCateId());
-            cataIds.add(course.getSecondCateId());
-            cataIds.add(course.getThirdCateId());
-        }
-        //课程分类信息
-        List<CataSimpleInfoVO> cataSimpleInfoVOS = courseCatalogueService.getManyCataSimpleInfo(new ArrayList<>(cataIds));
-        Map<Long, String> cataSimpleInfoVOMap = CollUtils.isEmpty(cataSimpleInfoVOS) ?
-                new HashMap<>() : cataSimpleInfoVOS.stream().collect(
-                Collectors.toMap(CataSimpleInfoVO::getId, CataSimpleInfoVO::getName));
+        // 2.转换vo
+        CourseFullInfoDTO courseFullInfoDTO = BeanUtils.toBean(course, CourseFullInfoDTO.class);
 
-        return BeanUtils.copyList(courses, CourseInfoDTO.class, (course, courseInfoDto) -> {
-            courseInfoDto.setCates(Arrays.asList(
-                    StringUtils.nullToEmpty(cataSimpleInfoVOMap.get(course.getFirstCateId())), //一级目录分类
-                    StringUtils.nullToEmpty(cataSimpleInfoVOMap.get(course.getSecondCateId())), //二级目录分类
-                    StringUtils.nullToEmpty(cataSimpleInfoVOMap.get(course.getThirdCateId())) //三级目录分类
-            ));
+        // 3.查询目录信息
+        if(withCatalogue) {
+            courseFullInfoDTO.setChapters(courseCatalogueService.queryCourseCatalogues(id, true));
+        }
+        // 4.查询教师信息
+        if(withTeachers) {
+            courseFullInfoDTO.setTeacherIds(courseTeacherService.getTeacherIdOfCourse(id));
+        }
+        return courseFullInfoDTO;
+    }
+
+    @Override
+    public PageDTO<CoursePageVO> queryForPage(CoursePageQuery coursePageQuery) {
+        //转换成查询条件
+        LambdaQueryWrapper<Course> queryWrapper = SqlWrapperUtils.toLambdaQueryWrapper(coursePageQuery, Course.class);
+        //课程更新时间查询条件
+        queryWrapper.between(ObjectUtils.isNotEmpty(coursePageQuery.getBeginTime()) &&
+                        ObjectUtils.isNotEmpty(coursePageQuery.getEndTime()), Course::getUpdateTime,
+                coursePageQuery.getBeginTime(), coursePageQuery.getEndTime());
+        //搜索关键字课程名称
+        queryWrapper.like(StringUtils.isNotEmpty(coursePageQuery.getKeyword()),
+                Course::getName, coursePageQuery.getKeyword());
+        Page<Course> page = page(coursePageQuery.toMpPage(), queryWrapper);
+        if (CollUtils.isEmpty(page.getRecords())) {
+            return PageDTO.empty(page);
+        }
+        //更新人
+        List<Long> updaterList = page.getRecords().stream()
+                .map(Course::getUpdater)
+                .collect(Collectors.toList());
+        //查询更新人用户信息
+        List<UserDTO> userDTOS = userClient.queryUserByIds(updaterList);
+        Map<Long, String> updaterMap = CollUtils.isEmpty(updaterList) ? new HashMap<>()
+                : userDTOS.stream().collect(Collectors.toMap(UserDTO::getId, UserDTO::getName));
+        //课程分类
+        List<Category> list = categoryService.list();
+        Map<Long, String> categoryNameMap = CollUtils.isEmpty(list) ? new HashMap<>()
+                : list.stream().collect(Collectors.toMap(Category::getId, Category::getName));
+        //课程id列表
+        List<Long> courseIdList = page.getRecords().stream()
+                .map(Course::getId)
+                .collect(Collectors.toList());
+        //统计课程报名人数map
+        Map<Long, Integer> peoNumOfCourseMap = orderClient.countEnrollNumOfCourse(courseIdList);
+
+        return PageDTO.of(page, CoursePageVO.class, (course, coursePageVO) -> {
+            //课程所属分类
+            String categories = StringUtils.format("{}/{}/{}",
+                    categoryNameMap.get(course.getFirstCateId()),
+                    categoryNameMap.get(course.getFirstCateId()),
+                    categoryNameMap.get(course.getFirstCateId()));
+            coursePageVO.setCategories(categories);
+            //更新人
+            coursePageVO.setUpdaterName(updaterMap.get(course.getUpdater()));
+            //报名人数
+            coursePageVO.setSold(NumberUtils.null2Zero(peoNumOfCourseMap.get(course.getId())));
+            //评分
+            coursePageVO.setScore(40 + course.getSectionNum() % 10); //临时使用 todo
+            // 课时
+            coursePageVO.setSections(course.getSectionNum());
         });
     }
 
-    @Override
-    public CourseInfoDTO getInfoById(Long id) {
-        Course course = baseMapper.selectById(id);
-        CourseInfoDTO courseInfoDTO = BeanUtils.toBean(course, CourseInfoDTO.class);
-        if (courseInfoDTO == null) {
-            return new CourseInfoDTO();
-        }
-        List<CataVO> cataVOS = courseCatalogueService.queryCourseCatalogues(id, true);
-        courseInfoDTO.setCataDTOS(BeanUtils.copyList(cataVOS, CataDTO.class));
-        courseInfoDTO.setTeacherIds(courseTeacherService.getTeacherIdOfCourse(id));
-        return courseInfoDTO;
-    }
-
-    @Override
-    public CourseSimpleInfoDTO getSimpleInfoById(Long id) {
-        Course course = getById(id);
-        return BeanUtils.copyBean(course, CourseSimpleInfoDTO.class);
-    }
 
     private void sendFinishedCourse(List<Course> finishedCourse) {
         CompletableFuture.runAsync(() -> {

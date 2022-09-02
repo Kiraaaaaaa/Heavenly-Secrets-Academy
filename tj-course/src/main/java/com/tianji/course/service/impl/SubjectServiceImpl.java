@@ -75,11 +75,16 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, Subject> impl
         QueryWrapper<Subject> queryWrapper = new QueryWrapper<>();
         //题目类型
         queryWrapper.lambda().in(StringUtils.isNotEmpty(subjectPageParamDTO.getSubjectTypes()),
-                        Subject::getSubjectType, StringUtils.split(subjectPageParamDTO.getSubjectTypes(), ","))
+                Subject::getSubjectType, StringUtils.split(subjectPageParamDTO.getSubjectTypes(), ","))
                 //题目名称
                 .like(StringUtils.isNotEmpty(subjectPageParamDTO.getName()), Subject::getName, subjectPageParamDTO.getName())
                 //仅我录入的
-                .eq(BooleanUtils.isTrue(subjectPageParamDTO.getOwn()), Subject::getCreater, UserContext.getUser())
+                .and(
+                        BooleanUtils.isTrue(subjectPageParamDTO.getOwn()),
+                        subjectLambdaQueryWrapper ->
+                                subjectLambdaQueryWrapper.or().eq(Subject::getCreater, UserContext.getUser())
+                                        .or().eq(Subject::getUpdater, UserContext.getUser())
+                )
                 //难度
                 .eq(subjectPageParamDTO.getDifficulty() != null, Subject::getDifficulty, subjectPageParamDTO.getDifficulty())
                 .eq(Subject::getDeleted, Constant.DATA_NOT_DELETE);
@@ -266,7 +271,7 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, Subject> impl
 
         //获取题目id列表
         List<Long> subjectIdList = courseCataSubjectMapper.querySubjectIdByCataId(cataId);
-        if(CollUtils.isEmpty(subjectIdList)){
+        if (CollUtils.isEmpty(subjectIdList)) {
             return new ArrayList<>();
         }
         //获取题目

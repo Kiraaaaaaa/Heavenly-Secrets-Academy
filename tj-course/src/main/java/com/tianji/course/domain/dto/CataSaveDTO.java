@@ -15,13 +15,12 @@ import javax.validation.constraints.Size;
 import java.util.List;
 
 /**
- * @ClassName CataSaveDTO
- * @Author wusongsong
- * @Date 2022/7/11 16:49
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 16:49
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("章节")
+@ApiModel(description = "章节")
 public class CataSaveDTO implements Checker {
     @ApiModelProperty("章、节、练习id")
     private Long id;

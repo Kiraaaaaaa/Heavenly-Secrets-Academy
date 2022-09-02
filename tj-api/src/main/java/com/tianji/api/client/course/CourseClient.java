@@ -1,12 +1,9 @@
 package com.tianji.api.client.course;
 
 import com.tianji.api.dto.course.*;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -29,7 +26,6 @@ public interface CourseClient {
      * @return 小节对应的mediaId和课程id
      */
     @GetMapping("/course/section/{id}")
-    @ApiImplicitParam(name = "id", value = "小节id，不支持章id或者练习id查询")
     SectionInfoDTO sectionInfo(@PathVariable("id") Long sectionId);
 
     /**
@@ -42,43 +38,31 @@ public interface CourseClient {
     List<MediaQuoteDTO> mediaUserInfo(@RequestParam("mediaIds") Iterable<Long> mediaIds);
 
     /**
-     * 获取课程信息包含草稿中的
+     * 根据课程id查询索引库需要的数据
      *
      * @param id 课程id
-     * @param draft 是否查看草稿信息
-     * @return
+     * @return 索引库需要的数据
      */
-    @GetMapping("/course/getSearchInfo/{id}")
-    CourseDTO getSearchInfo(@PathVariable("id") Long id, @RequestParam("draft") Boolean draft);
+    @GetMapping("/course/{id}/searchInfo")
+    CourseSearchDTO getSearchInfo(@PathVariable("id") Long id);
 
     /**
-     * 校验课程是否可以购买，并返回课程信息
-     *
-     * @param courseIds 课程id列表
-     * @return
+     * 根据课程id集合查询课程简单信息
+     * @param ids id集合
+     * @return 课程简单信息的列表
      */
-    @GetMapping("/course/checkCoursePurchase")
-    List<CoursePurchaseInfoDTO> checkCoursePurchase(@RequestParam("courseIds") Iterable<Long> courseIds);
-
     @GetMapping("/courses/simpleInfo/list")
     List<CourseSimpleInfoDTO> getSimpleInfoList(@RequestParam("ids") Iterable<Long> ids);
 
-    @GetMapping("/courses/simpleInfo/{id}")
-    CourseSimpleInfoDTO getSimpleInfoById(@PathVariable("id") Long id);
-
     /**
-     * 课程完结任务
-     * @return
-     */
-    @PostMapping("/course/finished")
-    Integer courseFinished();
-
-    /**
-     * 根据课程id，查询课程信息
-     * @param id
-     * @return
+     * 根据课程id，获取课程、目录、教师信息
+     * @param id 课程id
+     * @return 课程信息、目录信息、教师信息
      */
     @GetMapping("/course/{id}")
-    @ApiOperation("获取课程的基本信息")
-    CourseInfoDTO getCourseInfoById(@PathVariable("id") Long id);
+    CourseFullInfoDTO getCourseInfoById(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "withCatalogue", required = false) boolean withCatalogue,
+            @RequestParam(value = "withTeachers", required = false) boolean withTeachers
+    );
 }

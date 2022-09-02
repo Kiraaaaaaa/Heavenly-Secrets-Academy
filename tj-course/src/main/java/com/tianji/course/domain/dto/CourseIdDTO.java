@@ -8,12 +8,11 @@ import lombok.Data;
 import javax.validation.constraints.NotNull;
 
 /**
- * @ClassName CourseIdDTO
- * @Author wusongsong
- * @Date 2022/7/20 16:50
- * @Version
+ * @author wusongsong
+ * @since 2022/7/20 16:50
+ * @version 1.0.0
  **/
-@ApiModel("课程id")
+@ApiModel(description = "课程id")
 @Data
 public class CourseIdDTO {
     @ApiModelProperty("课程id")

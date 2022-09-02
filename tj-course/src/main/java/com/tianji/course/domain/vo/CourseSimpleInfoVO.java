@@ -8,10 +8,9 @@ import java.time.LocalDateTime;
 
 /**
  * 课程简单信息
- * @ClassName CourseSimpleInfoVO
- * @Author wusongsong
- * @Date 2022/7/11 20:56
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 20:56
+ * @version 1.0.0
  **/
 @Data
 @ApiModel("课程简单信息")

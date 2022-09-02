@@ -1,16 +1,17 @@
 package com.tianji.course.domain.vo;
 
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
  * 课程数据统计
- * @ClassName CourseStatisticsVO
- * @Author wusongsong
- * @Date 2022/7/10 15:36
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 15:36
+ * @version 1.0.0
  **/
 @Data
+@ApiModel(description = "课程统计数据")
 public class CourseStatisticsVO {
     @ApiModelProperty("课程总数量")
     private Integer totalNum;
@@ -26,6 +27,5 @@ public class CourseStatisticsVO {
     private Integer recordNum;
     @ApiModelProperty("直播课程数")
     private Integer liveNum;
-
 
 }

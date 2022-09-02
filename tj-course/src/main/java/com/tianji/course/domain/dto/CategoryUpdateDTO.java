@@ -12,13 +12,12 @@ import javax.validation.constraints.Size;
 
 /**
  * 课程分类更新类，只更新名称和排序
- * @ClassName CategoryUpdateDTO
- * @Author wusongsong
- * @Date 2022/7/10 15:32
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 15:32
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("分类信息更新模型")
+@ApiModel(description = "分类信息更新模型")
 public class CategoryUpdateDTO {
     @ApiModelProperty("分类id")
     @NotNull(message = CourseErrorInfo.Msg.CATEGORY_ID_NOT_NULL)

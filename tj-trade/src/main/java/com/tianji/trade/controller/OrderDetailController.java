@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * <p>
  * 订单明细 前端控制器
@@ -44,4 +47,15 @@ public class OrderDetailController {
         return detailService.queryOrdersDetailProgress(id);
     }
 
+    @ApiOperation("校验课程是否购买，是否过期")
+    @GetMapping("/course/{id}")
+    public Boolean checkCourseOrderInfo(@PathVariable("id") Long courseId){
+        return detailService.checkCourseOrderInfo(courseId);
+    }
+
+    @ApiOperation("统计课程报名人数")
+    @GetMapping("/enrollNum")
+    public Map<Long, Integer> countEnrollNumOfCourse(List<Long> courseIdList){
+        return detailService.countEnrollNumOfCourse(courseIdList);
+    }
 }

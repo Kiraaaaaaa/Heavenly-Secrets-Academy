@@ -9,13 +9,12 @@ import java.util.List;
 
 /**
  * 题目数据
- * @ClassName SubjectVO
- * @Author wusongsong
- * @Date 2022/7/11 20:24
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 20:24
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("题目分页数据")
+@ApiModel(description = "题目分页数据")
 public class SubjectVO {
     @ApiModelProperty("题目id")
     private Long id;

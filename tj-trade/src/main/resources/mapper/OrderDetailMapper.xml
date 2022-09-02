@@ -2,4 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.tianji.trade.mapper.OrderDetailMapper">
 
+    <select id="countEnrollNumOfCourse" resultType="com.tianji.api.dto.IdAndNumDTO">
+        SELECT course_id AS id, COUNT(course_id) AS num
+        FROM order_detail
+        ${ew.customSqlSegment}
+        GROUP BY course_id
+    </select>
 </mapper>

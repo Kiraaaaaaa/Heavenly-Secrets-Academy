@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
  * 分布式锁
  *
  * @ClassName Lock
- * @Author wusongsong
+ * @author wusongsong
  * <p>
  * 加锁操作,
  * 抢夺执行权。

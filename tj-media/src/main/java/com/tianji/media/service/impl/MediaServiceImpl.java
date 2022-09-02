@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.course.CourseClient;
-import com.tianji.api.client.learning.LearningClient;
+import com.tianji.api.client.order.OrderClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.course.MediaQuoteDTO;
 import com.tianji.api.dto.course.SectionInfoDTO;
@@ -24,7 +24,7 @@ import com.tianji.media.enums.FileStatus;
 import com.tianji.media.mapper.MediaMapper;
 import com.tianji.media.service.IMediaService;
 import com.tianji.media.storage.IMediaStorage;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,24 +42,16 @@ import static com.tianji.media.constants.FileErrorInfo.MEDIA_NOT_EXISTS;
  * @since 2022-06-30
  */
 @Service
+@RequiredArgsConstructor
 public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements IMediaService {
 
     private final IMediaStorage mediaStorage;
 
     private final CourseClient courseClient;
 
-    private final LearningClient learningClient;
+    private final OrderClient orderClient;
 
     private final UserClient userClient;
-
-    @Autowired
-    public MediaServiceImpl(
-            IMediaStorage mediaStorage, CourseClient courseClient, LearningClient learningClient, UserClient userClient) {
-        this.mediaStorage = mediaStorage;
-        this.courseClient = courseClient;
-        this.learningClient = learningClient;
-        this.userClient = userClient;
-    }
 
     @Override
     public String getUploadSignature() {
@@ -72,7 +64,7 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
         SectionInfoDTO sectionInfo = courseClient.sectionInfo(sectionId);
         Long courseId = sectionInfo.getCourseId();
         // 2.查询用户课程表，是否是购买过的课程
-        Boolean isMyLesson = learningClient.checkMyLesson(courseId);
+        Boolean isMyLesson = orderClient.checkMyLesson(courseId);
 
         if(BooleanUtils.isTrue(isMyLesson)){
             // 2.1.是，查询媒资信息，直接获取签名

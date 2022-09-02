@@ -5,7 +5,7 @@ import com.tianji.api.dto.course.MediaQuoteDTO;
 import com.tianji.api.dto.course.SectionInfoDTO;
 import com.tianji.course.domain.po.CourseCatalogue;
 import com.tianji.course.domain.vo.CataSimpleInfoVO;
-import com.tianji.course.domain.vo.CataVO;
+import com.tianji.api.dto.course.CatalogueDTO;
 
 import java.util.List;
 
@@ -22,16 +22,16 @@ public interface ICourseCatalogueService extends IService<CourseCatalogue> {
     /**
      * 查询线上课程目录
      *
-     * @param courseId
-     * @return
+     * @param courseId 课程id
+     * @return 课程目录
      */
-    List<CataVO> queryCourseCatalogues(Long courseId,Boolean withPractice);
+    List<CatalogueDTO> queryCourseCatalogues(Long courseId, Boolean withPractice);
 
     /**
      * 批量统计媒资id引用次数
      *
-     * @param mediaIds
-     * @return
+     * @param mediaIds 媒资id
+     * @return 媒资引用次数
      */
     List<MediaQuoteDTO> countMediaUserInfo(List<Long> mediaIds);
 
@@ -46,8 +46,8 @@ public interface ICourseCatalogueService extends IService<CourseCatalogue> {
     /**
      * 根据课程id获取课程的目录列表
      *
-     * @param courseId
-     * @return
+     * @param courseId 课程id
+     * @return 课程的目录列表
      */
     List<CataSimpleInfoVO> getCatasIndexList(Long courseId);
 

@@ -11,13 +11,12 @@ import javax.validation.constraints.NotNull;
 /**
  * 课程目录启用或停用模型
  *
- * @ClassName CategoryDisableOrEnableDTO
- * @Author wusongsong
- * @Date 2022/7/10 15:24
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 15:24
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程分类启用/禁用")
+@ApiModel(description = "课程分类启用/禁用")
 public class CategoryDisableOrEnableDTO {
     @ApiModelProperty("课程分类id")
     @NotNull(message = CourseErrorInfo.Msg.CATEGORY_ID_NOT_NULL)

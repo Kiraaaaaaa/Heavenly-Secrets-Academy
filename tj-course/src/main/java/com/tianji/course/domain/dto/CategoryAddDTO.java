@@ -13,13 +13,12 @@ import javax.validation.constraints.Size;
 /**
  * 课程分类新增模型
  *
- * @ClassName CategoryAddDTO
- * @Author wusongsong
- * @Date 2022/7/10 12:10
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 12:10
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程分类新增模型")
+@ApiModel(description = "课程分类新增模型")
 public class CategoryAddDTO {
     @ApiModelProperty("父分类id, 如果是新增一级分类parentId传0")
     private Long parentId;

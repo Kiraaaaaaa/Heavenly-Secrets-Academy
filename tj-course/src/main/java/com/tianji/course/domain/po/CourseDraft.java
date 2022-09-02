@@ -109,7 +109,7 @@ public class CourseDraft implements Serializable {
     /**
      * 课程有效期，单位月
      */
-    private int validDuration;
+    private Integer validDuration;
 
     /**
      * 课程总节数

@@ -6,12 +6,11 @@ import lombok.Data;
 
 /**
  * 课程类目分页查询
- * @ClassName CategoryListDTO
- * @Author wusongsong
- * @Date 2022/7/10 11:21
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 11:21
+ * @version 1.0.0
  **/
-@ApiModel("课程类目分页查询条件")
+@ApiModel(description = "课程类目分页查询条件")
 @Data
 public class CategoryListDTO {
     @ApiModelProperty("类目状态1:正常，2：禁用")

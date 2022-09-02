@@ -11,7 +11,6 @@ import com.tianji.search.config.InterestsProperties;
 import com.tianji.search.constants.SearchErrorInfo;
 import com.tianji.search.domain.po.Course;
 import com.tianji.search.domain.query.CoursePageQuery;
-import com.tianji.search.domain.vo.CourseAdminVO;
 import com.tianji.search.domain.vo.CourseVO;
 import com.tianji.search.enums.CourseStatus;
 import com.tianji.search.repository.CourseRepository;
@@ -109,12 +108,10 @@ public class SearchServiceImpl implements ISearchService {
             List<Long> categoryIds, boolean isFree, String sortBy, boolean isASC, int n) {
         // 1.准备Request
         SearchRequest request = new SearchRequest(CourseRepository.INDEX_NAME);
-        // 1.1.必须是上架课程
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
-        queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.STATUS, CourseStatus.ON_THE_MARKET.getValue()));
-        // 1.2.是否免费
+        // 1.1.是否免费
         queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.FREE, isFree));
-        // 1.3.分类id
+        // 1.2.分类id
         if (categoryIds != null) {
             if (categoryIds.size() == 1) {
                 queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.CATEGORY_ID_LV2, categoryIds.get(0)));
@@ -161,47 +158,6 @@ public class SearchServiceImpl implements ISearchService {
             c.setTeacher(tMap.getOrDefault(c.getTeacher(), "匿名"));
         }
         return courses;
-    }
-
-    @Override
-    public PageDTO<CourseAdminVO> queryCoursesForAdmin(CoursePageQuery query) {
-        // 1.搜索数据
-        if(StringUtils.isBlank(query.getSortBy())){
-            query.setSortBy(PUBLISH_TIME);
-            query.setIsAsc(false);
-        }
-        SearchResponse response = searchForResponse(query, CourseAdminVO.EXCLUDE_FIELDS);
-        // 2.解析响应
-        PageDTO<Course> result = handleSearchResponse(response, query.getPageSize());
-        // 3.处理VO
-        List<Course> list = result.getList();
-        if (CollUtils.isEmpty(list)) {
-            return PageDTO.empty(result.getTotal(), result.getPages());
-        }
-        List<CourseAdminVO> vos = new ArrayList<>(list.size());
-        // 3.1.查询更新人信息
-        Set<Long> updaterIds = list.stream().map(Course::getUpdater).filter(l -> l != 0).collect(Collectors.toSet());
-        Map<Long, String> updaterMap = null;
-        if (CollUtils.isNotEmpty(updaterIds)) {
-            List<UserDTO> updaters = userClient.queryUserByIds(updaterIds);
-            if (CollUtils.isNotEmpty(updaters)) {
-                updaterMap = updaters.stream()
-                        .collect(Collectors.toMap(UserDTO::getId, UserDTO::getName));
-            }
-        }
-        for (Course c : list) {
-            // 3.2.转换
-            CourseAdminVO vo = BeanUtils.toBean(c, CourseAdminVO.class);
-            // 3.3.查询分类信息
-            String categoryNames = categoryCache.getCategoryNames(c.getCategoryIds());
-            // 3.4.保存更新人
-            if (updaterMap != null) {
-                vo.setUpdater(updaterMap.getOrDefault(c.getUpdater(), "未知"));
-            }
-            vo.setCategories(categoryNames);
-            vos.add(vo);
-        }
-        return new PageDTO<>(result.getTotal(), result.getPages(), vos);
     }
 
     @Override

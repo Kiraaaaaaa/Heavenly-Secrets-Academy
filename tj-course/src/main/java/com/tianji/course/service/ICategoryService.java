@@ -1,7 +1,6 @@
 package com.tianji.course.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.tianji.api.dto.course.CategoryBasicDTO;
 import com.tianji.course.domain.dto.CategoryAddDTO;
 import com.tianji.course.domain.dto.CategoryDisableOrEnableDTO;
 import com.tianji.course.domain.dto.CategoryListDTO;
@@ -10,6 +9,7 @@ import com.tianji.course.domain.po.Category;
 import com.tianji.course.domain.vo.CategoryInfoVO;
 import com.tianji.course.domain.vo.CategoryVO;
 import com.tianji.course.domain.vo.SimpleCategoryVO;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.Map;
@@ -27,8 +27,8 @@ public interface ICategoryService extends IService<Category> {
     /**
      * 分页查询课程信息
      *
-     * @param categoryPageDTO
-     * @return
+     * @param categoryPageDTO 分页参数
+     * @return 课程分页信息
      */
     List<CategoryVO> list( CategoryListDTO categoryPageDTO);
 
@@ -42,50 +42,50 @@ public interface ICategoryService extends IService<Category> {
     /**
      * 获取课程分类信息
      * @param id 课程id
-     * @return
+     * @return 课程分类信息
      */
     CategoryInfoVO get(Long id);
 
     /**
      * 删除课程分类
-     * @param id
+     * @param id 分类id
      */
     void delete(Long id);
 
     /**
      * 课程分类启用或禁用
-     *
-     * @param categoryDisableOrEnableDTO
      */
     void disableOrEnable(CategoryDisableOrEnableDTO categoryDisableOrEnableDTO);
 
     /**
      * 更新课程分类信息
-     *
-     * @param categoryUpdateDTO
      */
     void update(CategoryUpdateDTO categoryUpdateDTO);
 
     /**
      * 获取所有分类的数据及结构
-     * @return
      */
     List<SimpleCategoryVO> all();
 
     /**
      * 获取课程分类id和名称
-     * @return
+     * @return 课程分类id和名称
      */
     Map<Long, String> getCateIdAndName();
 
-    List<CategoryBasicDTO> allOfOneLevel();
+    List<CategoryVO> allOfOneLevel();
 
     /**
      * 根据课程分类id查询分类列表
-     * @param ids
-     * @return
+     * @param ids  课程分类id
+     * @return 分类列表
      */
     List<Category> queryByIds(List<Long> ids);
 
-
+    /**
+     * 根据三级课程分类查询课程分类信息
+     * @param thirdCateIdList 三级课程分类
+     * @return 课程分类信息
+     */
+    Map<Long, String> queryByThirdCateIds(@RequestParam("thirdCateIdList") List<Long> thirdCateIdList);
 }

@@ -17,9 +17,9 @@ import java.time.LocalDateTime;
  * 课程基本信息
  *
  * @ClassName CourseBaseInfoSaveDTO
- * @Author wusongsong
- * @Date 2022/7/11 11:39
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 11:39
+ * @version 1.0.0
  **/
 
 @Data

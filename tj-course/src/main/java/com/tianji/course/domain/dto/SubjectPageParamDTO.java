@@ -7,13 +7,12 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * @ClassName SubjectPageParamDTO
- * @Author wusongsong
- * @Date 2022/7/11 20:07
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 20:07
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("题目分页参数")
+@ApiModel(description = "题目分页参数")
 public class SubjectPageParamDTO {
     @ApiModelProperty("一级课程分类")
     private Long firstCateId;

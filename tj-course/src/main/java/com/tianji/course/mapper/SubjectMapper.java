@@ -3,7 +3,7 @@ package com.tianji.course.mapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.tianji.course.domain.dto.IdAndNumDTO;
+import com.tianji.api.dto.IdAndNumDTO;
 import com.tianji.course.domain.po.Subject;
 import com.tianji.course.domain.po.SubjectCategory;
 import org.apache.ibatis.annotations.Param;
@@ -36,8 +36,6 @@ public interface SubjectMapper extends BaseMapper<Subject> {
 
     /**
      * 批量查询老师所负责的课程数量
-     * @param teacherIds
-     * @return
      */
     @Select("<script>SELECT ct.teacher_id,count(*) " +
             " from course c LEFT JOIN course_teacher ct on c.id=ct.course_id " +

@@ -9,9 +9,9 @@ import java.util.stream.Collectors;
 /**
  * 手动执行Violation处理校验结果
  * @ClassName ViolationUtils
- * @Author wusongsong
- * @Date 2022/7/18 20:52
- * @Version
+ * @author wusongsong
+ * @since 2022/7/18 20:52
+ * @version 1.0.0
  **/
 public class ViolationUtils {
 

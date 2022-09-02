@@ -1,11 +1,15 @@
 package com.tianji.course.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.tianji.api.dto.course.*;
+import com.tianji.api.dto.course.CourseFullInfoDTO;
+import com.tianji.api.dto.course.CourseSearchDTO;
+import com.tianji.api.dto.course.CourseSimpleInfoDTO;
+import com.tianji.api.dto.course.SubNumAndCourseNumDTO;
+import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.course.domain.dto.CourseSimpleInfoListDTO;
 import com.tianji.course.domain.po.Course;
-import com.tianji.course.domain.vo.CourseSimpleInfoVO;
-import org.springframework.web.bind.annotation.RequestParam;
+import com.tianji.course.domain.query.CoursePageQuery;
+import com.tianji.course.domain.vo.CoursePageVO;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +32,7 @@ public interface ICourseService extends IService<Course> {
      */
     void updateStatus(Long id, Integer status);
 
-    CourseDTO getCourseDTOById(Long id);
+    CourseSearchDTO getCourseDTOById(Long id);
 
 
     void delete(Long id);
@@ -37,34 +41,26 @@ public interface ICourseService extends IService<Course> {
      * 根据条件查询课程简单信息
      *
      * @param courseSimpleInfoListDTO 课程三级分类列表
-     * @return
+     * @return 课程信息列表
      */
-    List<CourseSimpleInfoVO> getSimpleInfoList(CourseSimpleInfoListDTO courseSimpleInfoListDTO);
-
-    /**
-     * 校验课程列表中这些课程当前是否可以购买,可以购买返回课程信息列表
-     * @param courseIds
-     * @return
-     */
-    List<CoursePurchaseInfoDTO> checkCoursePurchase(List<Long> courseIds);
+    List<CourseSimpleInfoDTO> getSimpleInfoList(CourseSimpleInfoListDTO courseSimpleInfoListDTO);
 
     /**
      * 查询老师出题数目和课程数目
-     * @param teacherIds
-     * @return
+     * @param teacherIds 老师id
+     * @return 老师的出题数量
      */
     List<SubNumAndCourseNumDTO> countSubjectNumAndCourseNumOfTeacher(List<Long> teacherIds);
 
     /**
      * 课程完结
-     * @return
      */
     int courseFinished();
 
     /**
      * 统计每个分类id所拥有的课程数量
-     * @param categoryIds
-     * @return
+     * @param categoryIds 分类id
+     * @return 分类对应的课程数量
      */
     Map<Long, Integer> countCourseNumOfCategory(List<Long> categoryIds);
 
@@ -77,14 +73,18 @@ public interface ICourseService extends IService<Course> {
     Integer countCourseNumOfCategory(Long categoryId);
 
     /**
-     * 根据课程id批量查询订单信息
-     *
-     * @param ids
-     * @return
+     * 查询课程的详细信息
+     * @param id 课程id
+     * @param withCatalogue 是否查询目录数据
+     * @param withTeachers 是否查询教师数据
+     * @return 课程详细信息
      */
-    List<CourseInfoDTO> queryCourseInfosByIds(@RequestParam("ids") List<Long> ids);
+    CourseFullInfoDTO getInfoById(Long id, boolean withCatalogue, boolean withTeachers);
 
-    CourseInfoDTO getInfoById(Long id);
-
-    CourseSimpleInfoDTO getSimpleInfoById(Long id);
+    /**
+     * 分页查询课程信息
+     * @param coursePageQuery 分页参数
+     * @return 课程分页数据
+     */
+    PageDTO<CoursePageVO> queryForPage(CoursePageQuery coursePageQuery);
 }

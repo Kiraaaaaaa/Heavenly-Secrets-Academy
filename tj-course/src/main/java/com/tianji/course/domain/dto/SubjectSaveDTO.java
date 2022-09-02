@@ -15,12 +15,11 @@ import java.util.List;
 
 /**
  * 题目保存模型
- * @ClassName SubjectSaveDTO
- * @Author wusongsong
- * @Date 2022/7/11 21:10
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 21:10
+ * @version 1.0.0
  **/
-@ApiModel("题目保存模型")
+@ApiModel(description = "题目保存模型")
 @Data
 public class SubjectSaveDTO implements Checker {
     @ApiModelProperty("题目id，为空新增，不为空更新")
@@ -59,10 +58,10 @@ public class SubjectSaveDTO implements Checker {
     @Override
     public void check() {
         //选择题 单选，多选，不定向选择
-        if(subjectType == SubjectConstants.Type.SIGNLE_CHOICE.getType() ||
-                subjectType == SubjectConstants.Type.MUtiple_CHOICE.getType() ||
-                subjectType == SubjectConstants.Type.NON_DIRECTIONAL_CHOICE.getType()){
-            Integer answerOptionMax = answers.stream().max(Integer::compare).get();
+        if(subjectType == SubjectConstants.Type.SINGLE_CHOICE.getValue() ||
+                subjectType == SubjectConstants.Type.MULTI_CHOICE.getValue() ||
+                subjectType == SubjectConstants.Type.NON_DIRECTIONAL_CHOICE.getValue()){
+            Integer answerOptionMax = answers.stream().max(Integer::compare).orElse(0);
             //选项最少1个最多10个
             if(CollUtils.isEmpty(options) || options.size() > 10){
                 throw new BizIllegalException("最少1个选项，最多10个选项");

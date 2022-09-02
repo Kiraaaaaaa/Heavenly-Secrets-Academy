@@ -64,6 +64,12 @@ public class OrderDetail implements Serializable {
      * 课程学习有效期，单位：月。从付款时间开始算
      */
     private Integer validDuration;
+
+    /**
+     * 课程学习过期时间
+     */
+    private LocalDateTime courseExpireTime;
+
     /**
      * 折扣金额
      */

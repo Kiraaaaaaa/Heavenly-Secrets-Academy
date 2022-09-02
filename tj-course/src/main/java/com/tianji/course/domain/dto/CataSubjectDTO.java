@@ -12,13 +12,12 @@ import java.util.List;
 /**
  * 保存章节信息
  *
- * @ClassName CataSubjectDTO
- * @Author wusongsong
- * @Date 2022/7/11 18:10
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 18:10
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("小节、练习和题目关系模型")
+@ApiModel(description = "小节、练习和题目关系模型")
 public class CataSubjectDTO {
         @ApiModelProperty("题目id")
         @NotNull(message = CourseErrorInfo.Msg.COURSE_SUBJECT_SAVE_SUBJECT_IDS_NULL)

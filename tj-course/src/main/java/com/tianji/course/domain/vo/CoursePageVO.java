@@ -1,4 +1,4 @@
-package com.tianji.search.domain.vo;
+package com.tianji.course.domain.vo;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 @ApiModel(description = "课程信息")
-public class CourseAdminVO {
+public class CoursePageVO {
     @ApiModelProperty(value = "课程id", example = "1")
     private Long id;
     @ApiModelProperty(value = "课程名称", example = "Java")
@@ -28,11 +28,9 @@ public class CourseAdminVO {
     @ApiModelProperty(value = "课程状态，1：待上架，2：已上架，3：已下架，4：已完结", example = "1")
     private Integer status;
     @ApiModelProperty(value = "更新人名字", example = "32900")
-    private String updater;
+    private String updaterName;
     @ApiModelProperty(value = "更新时间", example = "2022-7-18 19:52:36")
     private LocalDateTime updateTime;
     @ApiModelProperty("课程编辑进度：1：基本信息已经保存，2：课程目录已经保存，3：课程视频已保存，4：课程题目已保存，5：课程老师已经保存")
     private Integer step;
-    public static final String[] EXCLUDE_FIELDS =
-            {"free", "type", "teacher","duration","publishTime"};
 }

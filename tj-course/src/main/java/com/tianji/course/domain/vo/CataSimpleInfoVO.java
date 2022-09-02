@@ -7,13 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @ClassName CataSimpleInfoVO
- * @Author wusongsong
- * @Date 2022/7/26 9:28
- * @Version
+ * @author wusongsong
+ * @since 2022/7/26 9:28
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("目录简单信息")
+@ApiModel(description = "目录简单信息")
 @AllArgsConstructor
 @NoArgsConstructor
 public class CataSimpleInfoVO {

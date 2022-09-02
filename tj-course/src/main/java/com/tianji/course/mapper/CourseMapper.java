@@ -1,7 +1,7 @@
 package com.tianji.course.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.tianji.course.domain.dto.IdAndNumDTO;
+import com.tianji.api.dto.IdAndNumDTO;
 import com.tianji.course.domain.po.Course;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;

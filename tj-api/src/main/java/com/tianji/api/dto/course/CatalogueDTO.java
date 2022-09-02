@@ -7,14 +7,13 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * @ClassName CataVO
- * @Author wusongsong
- * @Date 2022/7/11 16:42
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 16:42
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程目录")
-public class CataDTO {
+@ApiModel(description = "课程目录")
+public class CatalogueDTO {
     @ApiModelProperty("章、节、练习id")
     private Long id;
     @ApiModelProperty("序号")
@@ -38,5 +37,5 @@ public class CataDTO {
     @ApiModelProperty("是否可以修改,默认不能修改")
     private Boolean canUpdate = false;
     @ApiModelProperty("该章的所有小节和练习")
-    private List<CataDTO> sections;
+    private List<CatalogueDTO> sections;
 }

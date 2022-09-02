@@ -6,13 +6,12 @@ import lombok.Data;
 
 /**
  * 课程视频保存模型
- * @ClassName CourseMediaSaveDTO
- * @Author wusongsong
- * @Date 2022/7/13 15:09
- * @Version
+ * @author wusongsong
+ * @since 2022/7/13 15:09
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程视频保存模型")
+@ApiModel(description = "课程视频保存模型")
 public class CourseMediaSaveDTO {
     @ApiModelProperty("小节id")
     private Long cataId;

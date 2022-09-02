@@ -14,10 +14,9 @@ import java.net.UnknownHostException;
 
 /**
  * 课程微服务启动器
- * @ClassName CourseApplication
- * @Author wusongsong
- * @Date 2022/7/9 19:40
- * @Version
+ * @author wusongsong
+ * @since 2022/7/9 19:40
+ * @version 1.0.0
  **/
 @SpringBootApplication
 @EnableScheduling

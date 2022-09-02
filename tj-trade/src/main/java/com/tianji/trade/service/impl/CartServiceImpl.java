@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.course.CourseClient;
+import com.tianji.api.dto.course.CourseFullInfoDTO;
 import com.tianji.api.dto.course.CourseSimpleInfoDTO;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.exceptions.BizIllegalException;
@@ -57,7 +58,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
         checkCartsFull(userId);
 
         // 3.根据id查询课程信息
-        CourseSimpleInfoDTO courseInfo = courseClient.getSimpleInfoById(courseId);
+        CourseFullInfoDTO courseInfo = courseClient.getCourseInfoById(courseId, false, false);
 
         // 4.判断是否为空
         if (courseInfo == null) {

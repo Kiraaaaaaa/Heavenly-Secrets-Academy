@@ -1,17 +1,18 @@
 package com.tianji.course.domain.vo;
 
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
- * @ClassName CategoryInfoVO
- * @Author wusongsong
- * @Date 2022/7/10 15:06
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 15:06
+ * @version 1.0.0
  **/
 @Data
+@ApiModel(description = "课程分类详细信息")
 public class CategoryInfoVO {
     @ApiModelProperty("课程分类id")
     private Long id;

@@ -9,13 +9,12 @@ import lombok.Data;
 import javax.validation.constraints.NotNull;
 
 /**
- * @ClassName CourseSaveVO
- * @Author wusongsong
- * @Date 2022/7/13 11:26
- * @Version
+ * @author wusongsong
+ * @since 2022/7/13 11:26
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程保存结果")
+@ApiModel(description = "课程保存结果")
 @AllArgsConstructor
 @NotNull
 @Builder

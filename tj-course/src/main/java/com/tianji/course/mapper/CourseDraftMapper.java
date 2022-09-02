@@ -1,7 +1,7 @@
 package com.tianji.course.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.tianji.course.domain.dto.IdAndNumDTO;
+import com.tianji.api.dto.IdAndNumDTO;
 import com.tianji.course.domain.po.CourseDraft;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
@@ -18,9 +18,9 @@ import java.util.List;
  * @since 2022-07-21
  */
 public interface CourseDraftMapper extends BaseMapper<CourseDraft> {
-    String COLUMNS = "id, name, course_type, cover_url, first_cate_id, second_cate_id, third_cate_id, free, price, template_type, template_url, status, purchase_start_time, purchase_end_time, step, media_duration,valid_duration, section_num, dep_id, create_time, update_time, creater, updater,can_update";
+    String COLUMNS = "id, name, course_type, cover_url, first_cate_id, second_cate_id, third_cate_id, free, price, template_type, template_url, status, purchase_start_time, purchase_end_time, step, media_duration,valid_duration, section_num, dep_id, create_time, update_time, creater, updater";
 
-    @Insert("insert into course_draft(" + COLUMNS + ") (select " + COLUMNS + ",0 from course where id=#{id} )")
+    @Insert("insert into course_draft(" + COLUMNS + ",can_update) (select " + COLUMNS + ",0 from course where id=#{id} )")
     int insertFromCourse(@Param("id") Long id);
 
     /**

@@ -1,10 +1,9 @@
 package com.tianji.course.constants;
 
 /**
- * @ClassName CourseConstants
- * @Author wusongsong
- * @Date 2022/7/14 13:44
- * @Version
+ * @author wusongsong
+ * @since 2022/7/14 13:44
+ * @version 1.0.0 1.0
  **/
 public class CourseConstants {
 

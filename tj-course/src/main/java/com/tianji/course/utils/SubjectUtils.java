@@ -12,10 +12,9 @@ import java.util.List;
 /**
  * 题目工具类
  *
- * @ClassName SubjectUtils
- * @Author wusongsong
- * @Date 2022/7/15 17:13
- * @Version
+ * @author wusongsong
+ * @since 2022/7/15 17:13
+ * @version 1.0.0
  **/
 public class SubjectUtils {
 

@@ -72,5 +72,4 @@ public class OrderController {
     public void deleteOrder(@ApiParam("要删除的订单id") @PathVariable("id") Long id) {
         orderService.deleteOrder(id);
     }
-
 }

@@ -2,9 +2,9 @@ package com.tianji.common.utils;
 
 /**
  * @ClassName SignUtils
- * @Author wusongsong
- * @Date 2022/7/3 11:25
- * @Version
+ * @author wusongsong
+ * @since 2022/7/3 11:25
+ * @version 1.0.0
  **/
 
 import cn.hutool.core.util.HexUtil;

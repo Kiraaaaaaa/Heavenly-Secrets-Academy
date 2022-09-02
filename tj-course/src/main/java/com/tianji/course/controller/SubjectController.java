@@ -28,9 +28,9 @@ import java.util.List;
 
 /**
  * @ClassName SubjectController
- * @Author wusongsong
- * @Date 2022/7/11 19:56
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 19:56
+ * @version 1.0.0
  **/
 @Api(tags = "题目相关接口")
 @RestController

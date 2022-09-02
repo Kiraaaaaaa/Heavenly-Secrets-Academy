@@ -11,7 +11,7 @@ import com.tianji.course.constants.CourseErrorInfo;
 import com.tianji.course.domain.po.CataIdAndSubScore;
 import com.tianji.course.domain.po.CourseCatalogue;
 import com.tianji.course.domain.vo.CataSimpleInfoVO;
-import com.tianji.course.domain.vo.CataVO;
+import com.tianji.api.dto.course.CatalogueDTO;
 import com.tianji.course.mapper.CourseCataSubjectMapper;
 import com.tianji.course.mapper.CourseCatalogueMapper;
 import com.tianji.course.properties.CourseProperties;
@@ -40,7 +40,7 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
     private CourseProperties courseProperties;
 
     @Override
-    public List<CataVO> queryCourseCatalogues(Long courseId,Boolean withPractice) {
+    public List<CatalogueDTO> queryCourseCatalogues(Long courseId, Boolean withPractice) {
         LambdaQueryWrapper<CourseCatalogue> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(CourseCatalogue::getCourseId, courseId);
         if(!withPractice){
@@ -61,21 +61,18 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
         Map<Long, Integer> cataIdAndTotalScoreMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
                 cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.summingInt(CataIdAndSubScore::getScore)));
 
-
-        List<CataVO> cataVOS = TreeDataUtils.parseToTree(courseCatalogues, CataVO.class, (courseCatalogue, cataVO)->{
+        return TreeDataUtils.parseToTree(courseCatalogues, CatalogueDTO.class, (courseCatalogue, cataVO)->{
             cataVO.setMediaName(courseCatalogue.getVideoName());
             cataVO.setIndex(courseCatalogue.getCIndex());
             cataVO.setSubjectNum(NumberUtils.null2Zero(cataIdAndNumMap.get(courseCatalogue.getId())).intValue()); //练习总数量
             cataVO.setTotalScore(NumberUtils.null2Zero(cataIdAndTotalScoreMap.get(courseCatalogue.getId()))); //练习总分数
         }, new CourseCatalogDataWrapper());
-
-        return cataVOS;
     }
 
     @Override
     public List<MediaQuoteDTO> countMediaUserInfo(List<Long> mediaIds) {
         if (CollUtils.isEmpty(mediaIds)) {
-            return new ArrayList<>();
+            return CollUtils.emptyList();
         }
         //根据媒资id查询所有的媒资资料
         LambdaQueryWrapper<CourseCatalogue> queryWrapper = new LambdaQueryWrapper<>();
@@ -128,7 +125,7 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
         }
         //章id与章序号映射关系
         Map<Long, Integer> chapterMap = courseCatalogues.stream().filter(
-                        courseCatalogue -> courseCatalogue.getType() == CourseConstants.CataType.CHAPTER)
+                courseCatalogue -> courseCatalogue.getType() == CourseConstants.CataType.CHAPTER)
                 .collect(Collectors.toMap(CourseCatalogue::getId, CourseCatalogue::getCIndex));
         //课程
         List<CataSimpleInfoVO> simpleInfoVOS = new ArrayList<>();
@@ -147,7 +144,7 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
     @Override
     public List<CataSimpleInfoVO> getManyCataSimpleInfo(List<Long> ids) {
         if(CollUtils.isEmpty(ids)){
-            return new ArrayList<>();
+            return CollUtils.emptyList();
         }
         //获取目录
         LambdaQueryWrapper<CourseCatalogue> queryWrapper = new LambdaQueryWrapper<>();
@@ -156,7 +153,7 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
         return BeanUtils.copyList(courseCatalogues, CataSimpleInfoVO.class);
     }
 
-    private static class CourseCatalogDataWrapper implements TreeDataUtils.DataProcessor<CataVO, CourseCatalogue> {
+    private static class CourseCatalogDataWrapper implements TreeDataUtils.DataProcessor<CatalogueDTO, CourseCatalogue> {
 
 
         @Override
@@ -175,12 +172,12 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
         }
 
         @Override
-        public List<CataVO> getChild(CataVO cataVO) {
-            return cataVO.getSections();
+        public List<CatalogueDTO> getChild(CatalogueDTO catalogueDTO) {
+            return catalogueDTO.getSections();
         }
 
         @Override
-        public void setChild(CataVO parent, List<CataVO> child) {
+        public void setChild(CatalogueDTO parent, List<CatalogueDTO> child) {
             parent.setSections(child);
         }
     }

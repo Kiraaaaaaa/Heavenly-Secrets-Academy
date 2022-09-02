@@ -4,9 +4,9 @@ package com.tianji.common.exceptions;
  * 请求超时异常
  *
  * @ClassName RequestTimeoutException
- * @Author wusongsong
- * @Date 2022/6/30 16:58
- * @Version
+ * @author wusongsong
+ * @since 2022/6/30 16:58
+ * @version 1.0.0
  **/
 public class RequestTimeoutException  extends CommonException{
     public RequestTimeoutException(String message) {

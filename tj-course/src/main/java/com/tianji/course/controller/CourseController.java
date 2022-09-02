@@ -1,9 +1,13 @@
 package com.tianji.course.controller;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.tianji.api.dto.course.CatalogueDTO;
 import com.tianji.api.dto.course.CourseSimpleInfoDTO;
+import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.validate.annotations.ParamChecker;
+import com.tianji.api.constants.CourseStatus;
 import com.tianji.course.domain.dto.*;
+import com.tianji.course.domain.query.CoursePageQuery;
 import com.tianji.course.domain.vo.*;
 import com.tianji.course.service.*;
 import com.tianji.course.utils.CourseSaveBaseGroup;
@@ -22,10 +26,9 @@ import java.util.List;
 /**
  * 课程controller
  *
- * @ClassName CourseController
- * @Author wusongsong
- * @Date 2022/7/10 15:34
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 15:34
+ * @version 1.0.0
  **/
 @Api(tags = "课程相关接口")
 @RestController
@@ -79,9 +82,9 @@ public class CourseController {
             @ApiImplicitParam(name = "id", value = "课程id"),
             @ApiImplicitParam(name = "see", value = "是否是用于查看页面查看数据，默认是查看,如果不是界面查看数据就是编辑页面使用")
     })
-    public List<CataVO> catas(@PathVariable(value = "id", required = false) Long id,
-                              @RequestParam(value = "see", required = false, defaultValue = "1") Boolean see,
-                              @RequestParam(value = "withPractice", required = false, defaultValue = "1") Boolean withPractice) {
+    public List<CatalogueDTO> catas(@PathVariable(value = "id", required = false) Long id,
+                                    @RequestParam(value = "see", required = false, defaultValue = "1") Boolean see,
+                                    @RequestParam(value = "withPractice", required = false, defaultValue = "1") Boolean withPractice) {
         return courseCatalogueDraftService.queryCourseCatalogues(id, see, withPractice);
     }
 
@@ -157,7 +160,7 @@ public class CourseController {
     /**
      * 先去删除加上数据删除后，再去删除草稿
      *
-     * @param id
+     * @param id 课程id
      */
     @DeleteMapping("delete/{id}")
     @ApiOperation("课程删除")
@@ -170,14 +173,10 @@ public class CourseController {
 
     @ApiOperation("根根条件列表获取课程信息")
     @GetMapping("/simpleInfo/list")
-    public List<CourseSimpleInfoVO> getSimpleInfoList(CourseSimpleInfoListDTO courseSimpleInfoListDTO) {
+    public List<CourseSimpleInfoDTO> getSimpleInfoList(CourseSimpleInfoListDTO courseSimpleInfoListDTO) {
         return courseService.getSimpleInfoList(courseSimpleInfoListDTO);
     }
 
-    @GetMapping("/simpleInfo/{id}")
-    public CourseSimpleInfoDTO getSimpleInfoById(@PathVariable("id") Long id){
-        return courseService.getSimpleInfoById(id);
-    }
     @ApiOperation("根据课程id，查询所有章节的序号")
     @GetMapping("/catas/index/list/{id}")
     @ApiImplicitParams(
@@ -192,4 +191,18 @@ public class CourseController {
     public CourseCataIdVO generator() {
         return new CourseCataIdVO(IdWorker.getId());
     }
+
+    @ApiOperation("管理端课程搜索接口")
+    @GetMapping("/page")
+    public PageDTO<CoursePageVO> queryForPage(CoursePageQuery coursePageQuery) {
+        if(CourseStatus.NO_UP_SHELF.equalsValue(coursePageQuery.getStatus()) ||
+                CourseStatus.DOWN_SHELF.equalsValue(coursePageQuery.getStatus())){
+            //待上架已下架查询草稿
+            return courseDraftService.queryForPage(coursePageQuery);
+        }else {
+            //已上架已完结查询正式数据
+            return courseService.queryForPage(coursePageQuery);
+        }
+    }
 }
+

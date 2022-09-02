@@ -12,13 +12,12 @@ import javax.validation.constraints.NotNull;
 /**
  * 课程视频模型
  *
- * @ClassName CourseMediaDTO
- * @Author wusongsong
- * @Date 2022/7/11 17:12
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 17:12
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程视频模型")
+@ApiModel(description = "课程视频模型")
 public class CourseMediaDTO {
     @ApiModelProperty("目录id")
     @NotNull(message = CourseErrorInfo.Msg.COURSE_MEDIA_SAVE_MEDIA_NULL)

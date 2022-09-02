@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 
 /**
  * @ClassName MediaQuoteDTO
- * @Author wusongsong
- * @Date 2022/7/18 17:43
- * @Version
+ * @author wusongsong
+ * @since 2022/7/18 17:43
+ * @version 1.0.0
  **/
 @ApiModel("媒资被引用情况")
 @Data

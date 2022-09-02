@@ -1,6 +1,5 @@
 package com.tianji.course.controller;
 
-import com.tianji.api.dto.course.CategoryBasicDTO;
 import com.tianji.course.domain.dto.CategoryAddDTO;
 import com.tianji.course.domain.dto.CategoryDisableOrEnableDTO;
 import com.tianji.course.domain.dto.CategoryListDTO;
@@ -24,10 +23,9 @@ import java.util.List;
 /**
  * 课程分类
  *
- * @ClassName CategoryController
- * @Author wusongsong
- * @Date 2022/7/10 11:16
- * @Version
+ * @author wusongsong
+ * @since 2022/7/10 11:16
+ * @version 1.0.0
  **/
 @RestController
 @Api(tags = "课程分类相关接口")
@@ -91,7 +89,7 @@ public class CategoryController {
 
     @GetMapping("getAllOfOneLevel")
     @ApiOperation("获取所有的课程分类，不分层")
-    public List<CategoryBasicDTO> allOfOneLevel() {
+    public List<CategoryVO> allOfOneLevel() {
         return categoryService.allOfOneLevel();
     }
 }

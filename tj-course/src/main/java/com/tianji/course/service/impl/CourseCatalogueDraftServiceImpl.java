@@ -15,7 +15,7 @@ import com.tianji.course.domain.dto.CataSubjectDTO;
 import com.tianji.course.domain.dto.CourseMediaDTO;
 import com.tianji.course.domain.po.*;
 import com.tianji.course.domain.vo.CataSimpleSubjectVO;
-import com.tianji.course.domain.vo.CataVO;
+import com.tianji.api.dto.course.CatalogueDTO;
 import com.tianji.course.mapper.CourseCataSubjectDraftMapper;
 import com.tianji.course.mapper.CourseCataSubjectMapper;
 import com.tianji.course.mapper.CourseCatalogueDraftMapper;
@@ -26,7 +26,6 @@ import com.tianji.course.service.ICourseDraftService;
 import com.tianji.course.service.ISubjectService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +53,6 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
     private ICourseCatalogueService courseCatalogueService;
 
     @Autowired
-    @Lazy
     private ICourseDraftService courseDraftService;
 
     @Autowired
@@ -103,27 +101,28 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         }else {
             throw new BizIllegalException(ErrorInfo.Msg.OPERATE_FAILED);
         }
-        //修改草稿保存步骤，步骤
-        courseDraftService.updateStep(courseId, CourseConstants.CourseStep.CATALOGUE);
         //重新插入草稿
         this.saveOrUpdateBatch(courseCatalogueDrafts);
+
+        //修改草稿保存步骤，步骤
+        courseDraftService.updateStep(courseId, CourseConstants.CourseStep.CATALOGUE);
 
     }
 
     @Override
-    public List<CataVO> queryCourseCatalogues(Long courseId, Boolean see, Boolean withPractice) {
+    public List<CatalogueDTO> queryCourseCatalogues(Long courseId, Boolean see, Boolean withPractice) {
         if (see) { //用于查看,先看上架的数据，没有上架数据在看草稿
-            List<CataVO> cataVOS = courseCatalogueService.queryCourseCatalogues(courseId, withPractice);
-            if (CollUtils.isNotEmpty(cataVOS)) {
-                return cataVOS;
+            List<CatalogueDTO> catalogueDTOS = courseCatalogueService.queryCourseCatalogues(courseId, withPractice);
+            if (CollUtils.isNotEmpty(catalogueDTOS)) {
+                return catalogueDTOS;
             }
             //查看草稿
-            cataVOS = queryCourseCatalogues(courseId, withPractice);
-            return CollUtils.isEmpty(cataVOS) ? new ArrayList<>() : cataVOS;
+            catalogueDTOS = queryCourseCatalogues(courseId, withPractice);
+            return CollUtils.isEmpty(catalogueDTOS) ? new ArrayList<>() : catalogueDTOS;
 
         } else { //用于编辑，直接查看草稿
-            List<CataVO> cataVOS = queryCourseCatalogues(courseId, withPractice);
-            return CollUtils.isEmpty(cataVOS) ? new ArrayList<>() : cataVOS;
+            List<CatalogueDTO> catalogueDTOS = queryCourseCatalogues(courseId, withPractice);
+            return CollUtils.isEmpty(catalogueDTOS) ? new ArrayList<>() : catalogueDTOS;
         }
     }
 
@@ -175,7 +174,9 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         //删除练习和题目对应的关系
         courseCataSubjectDraftMapper.deleteByCourseId(courseId);
         //批量插入练习和题目之间的关系
-        courseCataSubjectDraftMapper.batchInsert(cataSubjectDrafts);
+        if(!cataSubjectDrafts.isEmpty()) {
+            courseCataSubjectDraftMapper.batchInsert(cataSubjectDrafts);
+        }
         //修改课程填写step
         courseDraftService.updateStep(courseId, CourseConstants.CourseStep.SUBJECT);
     }
@@ -244,6 +245,10 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         List<CourseCataSubject> courseCataSubjects = BeanUtils.copyList(courseCataSubjectDrafts, CourseCataSubject.class);
         //2.删除练习和题目之间的关系
         courseCataSubjectMapper.deleteByCourseId(courseId);
+        if(CollUtils.isEmpty(courseCataSubjectDrafts)){
+            // 草稿中没有题目，直接结束
+            return;
+        }
         //3.将新的练习和题目之间的关系上架
         int result = courseCataSubjectMapper.batchInsert(courseCataSubjects);
         if (result != courseCataSubjects.size()) {
@@ -442,7 +447,7 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         return courseCatalogueDrafts;
     }
 
-    private List<CataVO> queryCourseCatalogues(Long courseId, Boolean withPractice) {
+    private List<CatalogueDTO> queryCourseCatalogues(Long courseId, Boolean withPractice) {
         LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(CourseCatalogueDraft::getCourseId, courseId);
         if (!withPractice) {
@@ -466,7 +471,7 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
                 cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.summingInt(CataIdAndSubScore::getScore)));
 
 
-        return TreeDataUtils.parseToTree(courseCatalogueDrafts, CataVO.class, (catalogueDraft, vo) -> {
+        return TreeDataUtils.parseToTree(courseCatalogueDrafts, CatalogueDTO.class, (catalogueDraft, vo) -> {
             vo.setIndex(catalogueDraft.getCIndex());
             vo.setMediaName(catalogueDraft.getVideoName());
             vo.setSubjectNum(NumberUtils.null2Zero(cataIdAndNumMap.get(catalogueDraft.getId())).intValue()); //练习总数量
@@ -542,7 +547,7 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
     /**
      * 课程目录草稿树型数据转换器
      */
-    private class CourseCatalogDraftDataWrapper implements TreeDataUtils.DataProcessor<CataVO, CourseCatalogueDraft> {
+    private class CourseCatalogDraftDataWrapper implements TreeDataUtils.DataProcessor<CatalogueDTO, CourseCatalogueDraft> {
 
         @Override
         public Object getParentKey(CourseCatalogueDraft courseCatalogueDraft) {
@@ -560,12 +565,12 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         }
 
         @Override
-        public List<CataVO> getChild(CataVO cataVO) {
-            return cataVO.getSections();
+        public List<CatalogueDTO> getChild(CatalogueDTO catalogueDTO) {
+            return catalogueDTO.getSections();
         }
 
         @Override
-        public void setChild(CataVO parent, List<CataVO> child) {
+        public void setChild(CatalogueDTO parent, List<CatalogueDTO> child) {
             parent.setSections(child);
         }
     }

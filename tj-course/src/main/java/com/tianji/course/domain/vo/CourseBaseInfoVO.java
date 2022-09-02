@@ -7,13 +7,12 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * @ClassName CourseBaseInfoVO
- * @Author wusongsong
- * @Date 2022/7/11 11:59
- * @Version
+ * @author wusongsong
+ * @since 2022/7/11 11:59
+ * @version 1.0.0
  **/
 @Data
-@ApiModel("课程基本信息")
+@ApiModel(description = "课程基本信息")
 public class CourseBaseInfoVO {
     @ApiModelProperty("课程id")
     private Long id;
@@ -68,5 +67,4 @@ public class CourseBaseInfoVO {
     private Boolean free;
     @ApiModelProperty("步骤,1:已保存基本信息，2：已保存课程目录，3：已保存课程视频，4：已保存题目，5：已保存课程老师")
     private Integer step;
-
 }
