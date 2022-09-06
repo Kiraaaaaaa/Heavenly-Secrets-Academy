@@ -23,7 +23,7 @@ public class RoleCache {
 
     public String exchangeRoleName(UserDTO u) {
         if (u == null) {
-            return "未知";
+            return "--";
         }
         if (UserType.STUDENT.equalsValue(u.getType())) {
             // 学生，直接返回角色名称

@@ -3,6 +3,9 @@ package com.tianji.course.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.api.client.exam.ExamClient;
+import com.tianji.api.dto.exam.QuestionBizDTO;
+import com.tianji.api.dto.exam.QuestionDTO;
 import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.exceptions.DbException;
@@ -66,6 +69,9 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
 
     @Autowired
     private ISubjectService subjectService;
+
+    @Autowired
+    private ExamClient examClient;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
@@ -189,8 +195,9 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
             return new ArrayList<>();
         }
         List<Long> subjectIdList = cataSubjectDrafts.stream().map(CourseCataSubjectDraft::getSubjectId).collect(Collectors.toList());
-        List<Subject> subjects = subjectService.getBaseMapper().selectBatchIds(subjectIdList);
-        Map<Long, String> subjectIdAndNameMap = subjects.stream().collect(Collectors.toMap(Subject::getId, Subject::getName));
+        List<QuestionDTO> subjects = examClient.queryQuestionByIds(subjectIdList);
+        Map<Long, String> subjectIdAndNameMap = subjects.stream()
+                .collect(Collectors.toMap(QuestionDTO::getId, QuestionDTO::getName));
 
         return cataSubjectDrafts.stream().collect(Collectors.groupingBy(CourseCataSubjectDraft::getCataId))
                 .entrySet().stream().map(entry -> {
@@ -237,29 +244,26 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         });
     }
 
+    // TODO 分布式事务
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public void copySubjectToShelf(Long courseId, Boolean isFirstShelf) {
         //1.从草稿中查出题目信息
         List<CourseCataSubjectDraft> courseCataSubjectDrafts = courseCataSubjectDraftMapper.getByCourseId(courseId);
-        List<CourseCataSubject> courseCataSubjects = BeanUtils.copyList(courseCataSubjectDrafts, CourseCataSubject.class);
+        List<QuestionBizDTO> subjects = courseCataSubjectDrafts.stream()
+                .map(s -> QuestionBizDTO.of(s.getCataId(), s.getSubjectId())).collect(Collectors.toList());
         //2.删除练习和题目之间的关系
-        courseCataSubjectMapper.deleteByCourseId(courseId);
         if(CollUtils.isEmpty(courseCataSubjectDrafts)){
             // 草稿中没有题目，直接结束
             return;
         }
         //3.将新的练习和题目之间的关系上架
-        int result = courseCataSubjectMapper.batchInsert(courseCataSubjects);
-        if (result != courseCataSubjects.size()) {
-            throw new DbException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
-        }
+        examClient.saveQuestionBizInfoBatch(subjects);
         //4.删除草稿
-        result = courseCataSubjectDraftMapper.deleteByCourseId(courseId);
-        if (result != courseCataSubjects.size()) {
+        int result = courseCataSubjectDraftMapper.deleteByCourseId(courseId);
+        if (result != courseCataSubjectDrafts.size()) {
             throw new DbException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
         }
-
     }
 
     @Override
@@ -462,15 +466,17 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         }
 
 
-        //课程的数量和分数
-        List<CataIdAndSubScore> cataIdAndSubScores = courseCataSubjectDraftMapper.queryCataIdAndScoreByCorseId(courseId);
-        //练习和题目数量map
-        Map<Long, Long> cataIdAndNumMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
-                cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.counting()));
-        Map<Long, Integer> cataIdAndTotalScoreMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
-                cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.summingInt(CataIdAndSubScore::getScore)));
-
-
+        // 4.查询课程对应的小节和题目信息
+        List<CourseCataSubjectDraft> subjects = courseCataSubjectDraftMapper.getByCourseId(courseId);
+        // 4.1.统计题目数量
+        Map<Long, Long> cataIdAndNumMap = CollUtils.isEmpty(subjects) ? new HashMap<>() :
+                subjects.stream().collect(Collectors.groupingBy(CourseCataSubjectDraft::getCataId, Collectors.counting()));
+        // 4.2.查询分数
+        Map<Long, Integer> cataIdAndTotalScoreMap = new HashMap<>(cataIdAndNumMap.size());
+        if(CollUtils.isNotEmpty(subjects)){
+            Set<Long> sectionIds = subjects.stream().map(CourseCataSubjectDraft::getCataId).collect(Collectors.toSet());
+            cataIdAndTotalScoreMap.putAll(examClient.queryQuestionScoresByBizIds(sectionIds));
+        }
         return TreeDataUtils.parseToTree(courseCatalogueDrafts, CatalogueDTO.class, (catalogueDraft, vo) -> {
             vo.setIndex(catalogueDraft.getCIndex());
             vo.setMediaName(catalogueDraft.getVideoName());

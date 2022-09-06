@@ -1,44 +1,18 @@
 package com.tianji.course.controller;
 
 
-import com.tianji.api.dto.course.SubjectDTO;
-import com.tianji.common.domain.dto.PageDTO;
-import com.tianji.common.domain.query.PageQuery;
-import com.tianji.common.utils.BeanUtils;
-import com.tianji.common.validate.annotations.ParamChecker;
-import com.tianji.course.domain.dto.SubjectPageParamDTO;
-import com.tianji.course.domain.dto.SubjectSaveDTO;
-import com.tianji.course.domain.po.Subject;
-import com.tianji.course.domain.vo.SubjectInfoVO;
-import com.tianji.course.domain.vo.SubjectSimpleVO;
-import com.tianji.course.domain.vo.SubjectVO;
-import com.tianji.course.service.ISubjectService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
-
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * @ClassName SubjectController
  * @author wusongsong
  * @since 2022/7/11 19:56
  * @version 1.0.0
  **/
-@Api(tags = "题目相关接口")
+/*@Api(tags = "题目相关接口")
 @RestController
 @RequestMapping("subjects")
-@Slf4j
+@Slf4j*/
 public class SubjectController {
 
-    @Autowired
+   /* @Autowired
     private ISubjectService subjectService;
 
     @GetMapping("list")
@@ -93,5 +67,5 @@ public class SubjectController {
     public List<SubjectSimpleVO> queryByCataId(@PathVariable("cataId") Long cataId) {
         return subjectService.queryByCataId(cataId);
     }
-
+*/
 }

@@ -60,7 +60,7 @@ public class SearchServiceImpl implements ISearchService {
     @Override
     public List<CourseVO> queryCourseByCateId(Long cateLv2Id) {
         return queryTopNByCategoryIdLv2sAndFree(
-                CollUtils.singletonList(cateLv2Id), false, PUBLISH_TIME, false, 10);
+                CollUtils.singletonList(cateLv2Id), null, PUBLISH_TIME, false, 10);
     }
 
     @Override
@@ -105,12 +105,14 @@ public class SearchServiceImpl implements ISearchService {
     }
 
     private List<CourseVO> queryTopNByCategoryIdLv2sAndFree(
-            List<Long> categoryIds, boolean isFree, String sortBy, boolean isASC, int n) {
+            List<Long> categoryIds, Boolean isFree, String sortBy, boolean isASC, int n) {
         // 1.准备Request
         SearchRequest request = new SearchRequest(CourseRepository.INDEX_NAME);
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
         // 1.1.是否免费
-        queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.FREE, isFree));
+        if(isFree != null) {
+            queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.FREE, isFree));
+        }
         // 1.2.分类id
         if (categoryIds != null) {
             if (categoryIds.size() == 1) {
@@ -119,7 +121,9 @@ public class SearchServiceImpl implements ISearchService {
                 queryBuilder.filter(QueryBuilders.termsQuery(CourseRepository.CATEGORY_ID_LV2, categoryIds));
             }
         }
-        request.source().query(queryBuilder);
+        if(isFree != null || categoryIds != null) {
+            request.source().query(queryBuilder);
+        }
         // 1.3.TopN
         request.source().size(n).sort(sortBy, isASC ? SortOrder.ASC : SortOrder.DESC);
         // 2.发送请求

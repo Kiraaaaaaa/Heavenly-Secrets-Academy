@@ -44,4 +44,10 @@ public class CourseServiceImpl implements ICourseService {
     public void updateCourseSold(List<Long> courseIds, int amount) {
         courseRepository.incrementSold(courseIds, amount);
     }
+
+    @Override
+    public void handleCourseDeletes(List<Long> courseIds) {
+        // 1.直接删除
+        courseRepository.deleteByIds(courseIds);
+    }
 }

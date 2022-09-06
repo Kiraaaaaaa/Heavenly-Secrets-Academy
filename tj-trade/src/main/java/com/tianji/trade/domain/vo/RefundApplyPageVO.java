@@ -22,7 +22,7 @@ public class RefundApplyPageVO {
     @ApiModelProperty("申请人手机号")
     private String proposerMobile;
     @ApiModelProperty("退款申请状态")
-    private Integer refundStatus;
+    private Integer status;
     @ApiModelProperty("退款申请状态描述")
     private String refundStatusDesc;
     @ApiModelProperty("退款申请时间")

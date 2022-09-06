@@ -78,7 +78,7 @@ public class PayServiceImpl implements IPayService {
                 .orderInfo(details.get(0).getName())
                 .bizUserId(order.getUserId())
                 .payType(PayType.NATIVE.getValue())
-                .payChannelCode(payApply.getPayChannelcode())
+                .payChannelCode(payApply.getPayChannelCode())
                 .build();
         return payClient.applyPayOrder(payApplyDTO);
     }

@@ -4,7 +4,6 @@ import com.tianji.api.dto.course.*;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.course.service.ICategoryService;
 import com.tianji.course.service.ICourseCatalogueService;
-import com.tianji.course.service.ICourseDraftService;
 import com.tianji.course.service.ICourseService;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +32,6 @@ public class CourseInfoController {
 
     @Autowired
     private ICourseService courseService;
-
-    @Autowired
-    private ICourseDraftService courseDraftService;
 
     @Autowired
     private ICategoryService categoryService;

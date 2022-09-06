@@ -127,7 +127,7 @@ public class RefundOrder implements Serializable {
      * 逻辑删除
      */
     @TableLogic
-    private Boolean isDelete;
+    private Boolean deleted;
 
 
     public boolean success(){

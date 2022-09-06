@@ -1,6 +1,7 @@
 package com.tianji.common.autoconfigure.mq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tianji.common.utils.StringUtils;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
@@ -16,7 +17,7 @@ import org.springframework.core.env.Environment;
 
 import static com.tianji.common.constants.MqConstants.Exchange.ERROR_EXCHANGE;
 import static com.tianji.common.constants.MqConstants.Key.ERROR_KEY_PREFIX;
-import static com.tianji.common.constants.MqConstants.Queue.ERROR_QUEUE_PREFIX;
+import static com.tianji.common.constants.MqConstants.Queue.ERROR_QUEUE_TEMPLATE;
 
 
 @Configuration
@@ -77,6 +78,6 @@ public class MqConfig implements EnvironmentAware{
     public void setEnvironment(Environment environment) {
         String appName = environment.getProperty("spring.application.name");
         this.defaultErrorRoutingKey = ERROR_KEY_PREFIX + appName;
-        this.defaultErrorQueue = ERROR_QUEUE_PREFIX + appName;
+        this.defaultErrorQueue = StringUtils.format(ERROR_QUEUE_TEMPLATE, appName);
     }
 }

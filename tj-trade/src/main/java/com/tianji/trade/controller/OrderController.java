@@ -4,6 +4,7 @@ package com.tianji.trade.controller;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.trade.domain.dto.PlaceOrderDTO;
 import com.tianji.trade.domain.query.OrderPageQuery;
+import com.tianji.trade.domain.vo.OrderConfirmVO;
 import com.tianji.trade.domain.vo.OrderPageVO;
 import com.tianji.trade.domain.vo.OrderVO;
 import com.tianji.trade.domain.vo.PlaceOrderResultVO;
@@ -14,6 +15,8 @@ import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * <p>
@@ -44,9 +47,15 @@ public class OrderController {
     }
 
     @ApiOperation("查询订单支付状态")
-    @PostMapping("/{id}/status")
+    @GetMapping("/{id}/status")
     public PlaceOrderResultVO queryOrderStatus(@ApiParam("订单id") @PathVariable("id") Long orderId) {
         return orderService.queryOrderStatus(orderId);
+    }
+
+    @ApiOperation("预下单接口，生成订单id，确认订单可用优惠券信息")
+    @GetMapping("prePlaceOrder")
+    public OrderConfirmVO prePlaceOrder(@RequestParam("courseIds")List<Long> courseIds) {
+        return orderService.prePlaceOrder(courseIds);
     }
 
     @ApiOperation("下单接口")

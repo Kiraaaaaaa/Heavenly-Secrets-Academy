@@ -23,7 +23,7 @@ public class PayMessageHandler {
     private final IRefundApplyService refundApplyService;
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "queue.trade.pay.success", durable = "true"),
+            value = @Queue(name = "trade.pay.success.queue", durable = "true"),
             exchange = @Exchange(name = MqConstants.Exchange.PAY_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = MqConstants.Key.PAY_SUCCESS
     ))
@@ -33,7 +33,7 @@ public class PayMessageHandler {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "queue.trade.refund.result", durable = "true"),
+            value = @Queue(name = "trade.refund.result.queue", durable = "true"),
             exchange = @Exchange(name = MqConstants.Exchange.PAY_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = MqConstants.Key.REFUND_CHANGE
     ))

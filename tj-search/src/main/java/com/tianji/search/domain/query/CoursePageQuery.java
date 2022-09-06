@@ -30,9 +30,9 @@ public class CoursePageQuery extends PageQuery {
     @ApiModelProperty(value = "课程类型，1-录播，2-直播", example = "1")
     private Integer type;
     @ApiModelProperty(value = "更新时间区间的开始时间", example = "2022-7-18 19:52:36")
-    @sinceTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime beginTime;
-    @sinceTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
+    @DateTimeFormat(pattern = DateUtils.DEFAULT_DATE_TIME_FORMAT)
     @ApiModelProperty(value = "更新时间区间的结束时间", example = "2022-7-18 19:52:36")
     private LocalDateTime endTime;
 }

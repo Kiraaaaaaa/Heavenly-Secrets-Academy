@@ -138,6 +138,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
             payOrder.setId(oldOrder.getId());
             payOrder.setQrCodeUrl("");
             updateById(payOrder);
+            payOrder.setPayOrderNo(oldOrder.getPayOrderNo());
             return payOrder;
         }
         // 6.旧单已经存在，且可能是未支付或未提交，且支付渠道一致，直接返回旧数据
@@ -204,7 +205,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
         page.addOrder(new OrderItem("id", true));
         // 2.查询
         Page<PayOrder> result = lambdaQuery()
-                .eq(PayOrder::getStatus, PayStatus.WAIT_BUYER_PAY)
+                .eq(PayOrder::getStatus, PayStatus.WAIT_BUYER_PAY.getValue())
                 .page(page);
         return PageDTO.of(result);
     }

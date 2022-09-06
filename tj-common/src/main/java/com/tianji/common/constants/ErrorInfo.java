@@ -25,7 +25,7 @@ public interface ErrorInfo {
     }
 
     interface Code {
-        int SUCCESS = 1;
+        int SUCCESS = 200;
         int FAILED = 0;
     }
 }

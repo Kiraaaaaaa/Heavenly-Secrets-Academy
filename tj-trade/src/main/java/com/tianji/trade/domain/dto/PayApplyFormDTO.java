@@ -10,5 +10,5 @@ public class PayApplyFormDTO {
     @ApiModelProperty(value = "订单id",required = true)
     private Long orderId;
     @ApiModelProperty(value = "支付渠道码，wxPay,aliPay",required = true)
-    private String payChannelcode;
+    private String payChannelCode;
 }

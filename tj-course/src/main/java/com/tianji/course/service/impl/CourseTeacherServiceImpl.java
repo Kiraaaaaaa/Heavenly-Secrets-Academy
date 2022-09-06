@@ -51,7 +51,7 @@ public class CourseTeacherServiceImpl extends ServiceImpl<CourseTeacherMapper, C
             if (UserDTO != null) {
                 courseTeacherVO.setIcon(UserDTO.getPhoto());
                 courseTeacherVO.setName(UserDTO.getName());
-                courseTeacherVO.setIntroduce(UserDTO.getIntro());
+                courseTeacherVO.setIntro(UserDTO.getIntro());
                 courseTeacherVO.setJob(UserDTO.getJob());
             }
             //老师id

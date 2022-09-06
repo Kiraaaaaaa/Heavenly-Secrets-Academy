@@ -2,11 +2,12 @@ package com.tianji.user.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.tianji.api.dto.auth.RoleDTO;
 import com.tianji.api.client.auth.AuthClient;
+import com.tianji.api.dto.auth.RoleDTO;
 import com.tianji.api.dto.user.LoginFormDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.domain.dto.LoginUserDTO;
+import com.tianji.common.enums.UserType;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.exceptions.ForbiddenException;
 import com.tianji.common.exceptions.UnauthorizedException;
@@ -19,7 +20,6 @@ import com.tianji.user.domain.po.User;
 import com.tianji.user.domain.po.UserDetail;
 import com.tianji.user.domain.vo.UserDetailVO;
 import com.tianji.user.enums.UserStatus;
-import com.tianji.common.enums.UserType;
 import com.tianji.user.mapper.UserMapper;
 import com.tianji.user.service.ICodeService;
 import com.tianji.user.service.IUserDetailService;
@@ -179,6 +179,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         UserDetail detail = BeanUtils.toBean(userDTO, UserDetail.class);
         detail.setId(user.getId());
         detail.setType(type);
+        if(type == UserType.TEACHER){
+            detail.setRoleId(TEACHER_ROLE_ID);
+        }else{
+            if (userDTO.getRoleId() == null) {
+                throw new BadRequestException("员工角色信息不能为空");
+            }
+        }
         detailService.save(detail);
         return user.getId();
     }

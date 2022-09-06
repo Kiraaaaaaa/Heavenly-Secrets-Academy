@@ -4,9 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.tianji.api.client.order.OrderClient;
+import com.tianji.api.client.exam.ExamClient;
+import com.tianji.api.client.order.TradeClient;
 import com.tianji.api.client.user.UserClient;
+import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.CourseSearchDTO;
+import com.tianji.api.dto.exam.QuestionBizDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.ErrorInfo;
@@ -18,7 +21,6 @@ import com.tianji.common.exceptions.DbException;
 import com.tianji.common.utils.*;
 import com.tianji.course.constants.CourseConstants;
 import com.tianji.course.constants.CourseErrorInfo;
-import com.tianji.api.constants.CourseStatus;
 import com.tianji.course.domain.dto.CourseBaseInfoSaveDTO;
 import com.tianji.course.domain.po.*;
 import com.tianji.course.domain.query.CoursePageQuery;
@@ -27,6 +29,7 @@ import com.tianji.course.domain.vo.CoursePageVO;
 import com.tianji.course.domain.vo.CourseSaveVO;
 import com.tianji.course.mapper.*;
 import com.tianji.course.service.*;
+import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -90,7 +93,10 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
     private RabbitMqHelper rabbitMqHelper;
 
     @Autowired
-    private OrderClient orderClient;
+    private TradeClient tradeClient;
+
+    @Autowired
+    private ExamClient examClient;
 
 
     @Override
@@ -270,7 +276,7 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
+    @GlobalTransactional(rollbackFor = {DbException.class, Exception.class})
     public void upShelf(Long id) {
         boolean isFirstUpShelf = false;
         //校验草稿当前是否可以提交
@@ -356,7 +362,7 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
+    @Transactional(rollbackFor = {DbException.class, Exception.class})
     public void downShelf(Long id) {
         Course course = courseService.getById(id);
         if (course == null || !course.getStatus().equals(CourseStatus.SHELF.getValue())) {
@@ -371,11 +377,28 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
         //3.目录内容copy到草稿中
         courseCatalogueDraftMapper.insertFromCourseCatalogue(id);
         //4.课程题目copy到草稿中
-        courseCataSubjectDraftMapper.insertFromCourseCataSubject(id);
+        copySubject2Draft(id);
+        // courseCataSubjectDraftMapper.insertFromCourseCataSubject(id);
         //5.课程老师copy到草稿中
         courseTeacherDraftMapper.insertFromCourseTeacher(id);
         //下架mq广播
         rabbitMqHelper.send(MqConstants.Exchange.COURSE_EXCHANGE, MqConstants.Key.COURSE_DOWN_KEY, id);
+    }
+
+    @GlobalTransactional
+    public void copySubject2Draft(Long courseId) {
+        // 1.查询课程有关的小节信息
+        List<Long> sectionIds = courseCatalogueDraftMapper.getSectionIdByCourseId(courseId);
+        // 2.查询题目关系
+        List<QuestionBizDTO> qbs = examClient.queryQuestionIdsByBizIds(sectionIds);
+        if (CollUtils.isEmpty(qbs)) {
+            return;
+        }
+        List<CourseCataSubjectDraft> list = qbs.stream().map(q -> new CourseCataSubjectDraft()
+                .setCourseId(courseId).setCataId(q.getBizId()).setSubjectId(q.getQuestionId())
+        ).collect(Collectors.toList());
+        // 3.保存到草稿表
+        courseCataSubjectDraftMapper.batchInsert(list);
     }
 
     @Override
@@ -394,7 +417,6 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
         courseSearchDTO.setCategoryIdLv1(courseDraft.getFirstCateId()); //一级分类id
         courseSearchDTO.setCategoryIdLv2(courseDraft.getSecondCateId()); //二级分类id
         courseSearchDTO.setCategoryIdLv3(courseDraft.getThirdCateId()); //三级分类id
-        courseSearchDTO.setDuration(courseDraft.getMediaDuration()); //视频播放时长
         courseSearchDTO.setPublishTime(courseDraft.getCreateTime()); //创建时间
         courseSearchDTO.setSections(courseDraft.getSectionNum()); //小节或练习数量
         if (CollUtils.isNotEmpty(courseTeacherDrafts)) {
@@ -458,7 +480,7 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
                 .map(CourseDraft::getId)
                 .collect(Collectors.toList());
         //统计课程报名人数map
-        Map<Long, Integer> peoNumOfCourseMap = orderClient.countEnrollNumOfCourse(courseIdList);
+        Map<Long, Integer> peoNumOfCourseMap = tradeClient.countEnrollNumOfCourse(courseIdList);
 
         return PageDTO.of(page, CoursePageVO.class, (course, coursePageVO) -> {
             //课程所属分类

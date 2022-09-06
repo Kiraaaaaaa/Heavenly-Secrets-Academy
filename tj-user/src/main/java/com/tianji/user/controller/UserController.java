@@ -5,6 +5,7 @@ import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.domain.dto.LoginUserDTO;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.utils.BeanUtils;
+import com.tianji.common.utils.CollUtils;
 import com.tianji.user.constants.UserErrorInfo;
 import com.tianji.user.domain.dto.UserFormDTO;
 import com.tianji.user.domain.po.User;
@@ -35,19 +36,20 @@ public class UserController {
 
     @ApiOperation("新增用户，一般是员工或教师")
     @PostMapping
-    public Long saveUser(UserDTO userDTO){
+    public Long saveUser(@Valid @RequestBody UserDTO userDTO){
+        userDTO.setId(null);
         return userService.saveUser(userDTO);
     }
 
     @ApiOperation("更新用户信息")
     @PutMapping("/{id}")
-    public void updateUser(UserDTO userDTO){
+    public void updateUser(@RequestBody UserDTO userDTO){
         userService.updateUser(userDTO);
     }
 
     @ApiOperation("更新当前登录用户信息，可修改密码")
     @PutMapping
-    public void updateCurrentUser(UserFormDTO userDTO){
+    public void updateCurrentUser(@Valid @RequestBody UserFormDTO userDTO){
         userService.updateUserWithPassword(userDTO);
     }
 
@@ -107,6 +109,9 @@ public class UserController {
     @GetMapping("/list")
     public List<UserDTO> queryUserByIds(
             @ApiParam("用户id的列表") @RequestParam("ids") List<Long> ids) {
+        if(CollUtils.isEmpty(ids)){
+            return CollUtils.emptyList();
+        }
         // 1.查询列表
         List<UserDetail> list = detailService.queryByIds(ids);
         // 2.转换

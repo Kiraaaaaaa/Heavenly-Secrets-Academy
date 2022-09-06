@@ -60,6 +60,10 @@ spring:
           uri: lb://trade-service
           predicates:
             - Path=/ts/**
+        - id: es
+          uri: lb://exam-service
+          predicates:
+            - Path=/es/**
       default-filters:
         - StripPrefix=1
       globalcors: # 全局的跨域处理

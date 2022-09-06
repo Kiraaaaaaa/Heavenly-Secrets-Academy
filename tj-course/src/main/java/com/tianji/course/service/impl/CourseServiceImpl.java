@@ -3,7 +3,8 @@ package com.tianji.course.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.tianji.api.client.order.OrderClient;
+import com.tianji.api.client.exam.ExamClient;
+import com.tianji.api.client.order.TradeClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.*;
@@ -89,7 +90,10 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     private UserClient userClient;
 
     @Autowired
-    private OrderClient orderClient;
+    private TradeClient tradeClient;
+
+    @Autowired
+    private ExamClient examClient;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
@@ -132,7 +136,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         }
 
         // 4.统计课程销量
-        Map<Long, Integer> peoNumOfCourseMap = orderClient.countEnrollNumOfCourse(CollUtils.singletonList(id));
+        Map<Long, Integer> peoNumOfCourseMap = tradeClient.countEnrollNumOfCourse(CollUtils.singletonList(id));
         if (CollUtils.isNotEmpty(peoNumOfCourseMap)) {
             courseSearchDTO.setSold(peoNumOfCourseMap.getOrDefault(id, 0));
         }
@@ -211,7 +215,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
 
 
         //老师id和出题数量
-        Map<Long, Long> teacherIdAndSubjectNumMap = subjectService.countSubjectNumOfTeacher(teacherIds);
+        Map<Long, Integer> teacherIdAndSubjectNumMap = examClient.countSubjectNumOfTeacher(teacherIds);
 
         List<SubNumAndCourseNumDTO> subNumAndCourseNumDTOS = new ArrayList<>();
         //遍历老师id，并为每个老师设置出题数量和课程数量
@@ -222,7 +226,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
                     NumberUtils.null2Zero(teacherIdAndCourseNumMap.get(teacherId)).intValue() +
                             NumberUtils.null2Zero(teacherIdAndCourseNumMap2.get(teacherId)).intValue(),
                     //出题数量
-                    NumberUtils.null2Zero(teacherIdAndSubjectNumMap.get(teacherId)).intValue()));
+                    NumberUtils.null2Zero(teacherIdAndSubjectNumMap.get(teacherId))));
         }
         return subNumAndCourseNumDTOS;
     }
@@ -334,7 +338,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
                 .map(Course::getId)
                 .collect(Collectors.toList());
         //统计课程报名人数map
-        Map<Long, Integer> peoNumOfCourseMap = orderClient.countEnrollNumOfCourse(courseIdList);
+        Map<Long, Integer> peoNumOfCourseMap = tradeClient.countEnrollNumOfCourse(courseIdList);
 
         return PageDTO.of(page, CoursePageVO.class, (course, coursePageVO) -> {
             //课程所属分类

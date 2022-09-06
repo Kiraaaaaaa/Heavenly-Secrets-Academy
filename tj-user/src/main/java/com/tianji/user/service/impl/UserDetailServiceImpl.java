@@ -53,12 +53,13 @@ public class UserDetailServiceImpl extends ServiceImpl<UserDetailMapper, UserDet
         String name = query.getName();
         String phone = query.getPhone();
         QueryWrapper<UserDetail> wrapper = new QueryWrapper<>();
-        wrapper.lambda()
-                .eq(status != null, UserDetail::getStatus, status)
-                .eq(StringUtils.isNotBlank(phone), UserDetail::getCellPhone, phone)
-                .like(StringUtils.isNotBlank(name), UserDetail::getName, name);
+        wrapper
+                .eq(type != null , "u.type", type)
+                .eq(status != null, "u.status", status)
+                .eq(StringUtils.isNotBlank(phone),"u.cell_phone", phone)
+                .like(StringUtils.isNotBlank(name), "ud.name", name);
         // 4.查询
-        p = getBaseMapper().queryByPage(p, wrapper, type.getValue());
+        p = getBaseMapper().queryByPage(p, wrapper);
         // 5.返回
         return p;
     }

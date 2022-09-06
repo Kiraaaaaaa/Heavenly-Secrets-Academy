@@ -13,7 +13,7 @@ import static com.tianji.common.constants.ErrorInfo.Msg.OK;
 @Data
 @ApiModel(description = "通用响应结果")
 public class R<T> {
-    @ApiModelProperty(value = "是否成功，0-失败，1-成功")
+    @ApiModelProperty(value = "业务状态码，200-成功，其它-失败")
     private int code;
     @ApiModelProperty(value = "响应消息", example = "OK")
     private String msg;

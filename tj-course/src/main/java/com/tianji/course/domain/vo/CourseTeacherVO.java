@@ -20,7 +20,7 @@ public class CourseTeacherVO {
     @ApiModelProperty("老师姓名")
     private String name;
     @ApiModelProperty("老师介绍")
-    private String introduce;
+    private String intro;
     @ApiModelProperty("用户端是否显示")
     private Boolean isShow;
     @ApiModelProperty("职位")

@@ -22,7 +22,5 @@ public interface UserDetailMapper extends BaseMapper<UserDetail> {
 
     List<UserDetail> queryByIds(List<Long> ids);
 
-    Page<UserDetail> queryByPage(Page<UserDetail> p,
-                                 @Param("ew") QueryWrapper<UserDetail> wrapper,
-                                 @Param("type") Integer type);
+    Page<UserDetail> queryByPage(Page<UserDetail> p, @Param("ew") QueryWrapper<UserDetail> wrapper);
 }

@@ -102,7 +102,7 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
                 .eq(query.getId() != null, OrderDetail::getId, query.getId())
                 .eq(query.getStatus() != null, OrderDetail::getStatus, query.getStatus())
                 .eq(query.getRefundStatus() != null, OrderDetail::getRefundStatus, query.getRefundStatus())
-                .eq(query.getPayChannel() != null, OrderDetail::getPayChannel, query.getPayChannel())
+                .eq(StringUtils.isNotBlank(query.getPayChannel()), OrderDetail::getPayChannel, query.getPayChannel())
                 .ge(query.getOrderStartTime() != null, OrderDetail::getCreateTime, query.getOrderStartTime())
                 .le(query.getOrderEndTime() != null, OrderDetail::getCreateTime, query.getOrderEndTime())
                 .eq(userId != null, OrderDetail::getUserId, userId)
@@ -249,13 +249,13 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
 
     @Override
     public void markDetailSuccessByOrderId(Long id, String payChannel, LocalDateTime successTime) {
-        OrderDetail detail = getById(id);
-        lambdaUpdate()
-                .set(OrderDetail::getStatus, PAYED.getValue())
-                .set(OrderDetail::getPayChannel, payChannel)
-                .set(OrderDetail::getCourseExpireTime, successTime.plusMonths(detail.getValidDuration()))
-                .eq(OrderDetail::getOrderId, id)
-                .update();
+        List<OrderDetail> details = queryByOrderId(id);
+        for (OrderDetail detail : details) {
+            detail.setStatus(PAYED.getValue());
+            detail.setPayChannel(payChannel);
+            detail.setCourseExpireTime(successTime.plusMinutes(detail.getValidDuration()));
+        }
+        updateBatchById(details);
     }
 
     @Override

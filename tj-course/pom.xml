@@ -77,6 +77,23 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
+        <!--seata-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+            <exclusions>
+                <!--版本较低，1.4.2，因此排除-->
+                <exclusion>
+                    <artifactId>seata-spring-boot-starter</artifactId>
+                    <groupId>io.seata</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <artifactId>seata-spring-boot-starter</artifactId>
+            <groupId>io.seata</groupId>
+            <version>1.5.0</version>
+        </dependency>
     </dependencies>
     <build>
         <finalName>${project.artifactId}</finalName>

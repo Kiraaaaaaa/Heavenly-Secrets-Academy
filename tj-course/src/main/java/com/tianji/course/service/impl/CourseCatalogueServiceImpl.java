@@ -2,16 +2,15 @@ package com.tianji.course.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.api.dto.course.CatalogueDTO;
 import com.tianji.api.dto.course.MediaQuoteDTO;
 import com.tianji.api.dto.course.SectionInfoDTO;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.*;
 import com.tianji.course.constants.CourseConstants;
 import com.tianji.course.constants.CourseErrorInfo;
-import com.tianji.course.domain.po.CataIdAndSubScore;
 import com.tianji.course.domain.po.CourseCatalogue;
 import com.tianji.course.domain.vo.CataSimpleInfoVO;
-import com.tianji.api.dto.course.CatalogueDTO;
 import com.tianji.course.mapper.CourseCataSubjectMapper;
 import com.tianji.course.mapper.CourseCatalogueMapper;
 import com.tianji.course.properties.CourseProperties;
@@ -19,7 +18,10 @@ import com.tianji.course.service.ICourseCatalogueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +55,7 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
             return null;
         }
 
+        /*
         //课程的数量和分数
         List<CataIdAndSubScore> cataIdAndSubScores = courseCataSubjectMapper.queryCataIdAndScoreByCorseId(courseId);
         //练习和题目数量map
@@ -60,12 +63,11 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
                 cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.counting()));
         Map<Long, Integer> cataIdAndTotalScoreMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
                 cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.summingInt(CataIdAndSubScore::getScore)));
+        */
 
         return TreeDataUtils.parseToTree(courseCatalogues, CatalogueDTO.class, (courseCatalogue, cataVO)->{
             cataVO.setMediaName(courseCatalogue.getVideoName());
             cataVO.setIndex(courseCatalogue.getCIndex());
-            cataVO.setSubjectNum(NumberUtils.null2Zero(cataIdAndNumMap.get(courseCatalogue.getId())).intValue()); //练习总数量
-            cataVO.setTotalScore(NumberUtils.null2Zero(cataIdAndTotalScoreMap.get(courseCatalogue.getId()))); //练习总分数
         }, new CourseCatalogDataWrapper());
     }
 

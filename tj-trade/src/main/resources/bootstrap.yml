@@ -36,3 +36,6 @@ tj:
   auth:
     resource:
       enable: true
+      excludeLoginPaths:
+        - "/order-details/enrollNum"
+        -

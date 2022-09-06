@@ -26,10 +26,7 @@ import com.tianji.trade.domain.dto.PlaceOrderDTO;
 import com.tianji.trade.domain.po.Order;
 import com.tianji.trade.domain.po.OrderDetail;
 import com.tianji.trade.domain.query.OrderPageQuery;
-import com.tianji.trade.domain.vo.OrderDetailVO;
-import com.tianji.trade.domain.vo.OrderPageVO;
-import com.tianji.trade.domain.vo.OrderVO;
-import com.tianji.trade.domain.vo.PlaceOrderResultVO;
+import com.tianji.trade.domain.vo.*;
 import com.tianji.trade.mapper.OrderMapper;
 import com.tianji.trade.service.ICartService;
 import com.tianji.trade.service.IOrderDetailService;
@@ -86,6 +83,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setDiscountAmount(discountAmount);
         order.setRealAmount(realAmount);
         order.setStatus(OrderStatus.NO_PAY.getValue());
+        order.setMessage(OrderStatus.NO_PAY.getProgressName());
         // 2.4.订单id
         Long orderId = IdWorker.getId(order);
         order.setId(orderId);
@@ -177,6 +175,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .payAmount(0)
                 .status(order.getStatus())
                 .build();
+    }
+
+    @Override
+    public OrderConfirmVO prePlaceOrder(List<Long> courseIds) {
+        // 1.查询课程信息
+        List<CourseSimpleInfoDTO> courseInfos = courseClient.getSimpleInfoList(courseIds);
+        if (CollUtils.isEmpty(courseInfos)) {
+            throw new BizIllegalException(TradeErrorInfo.COURSE_NOT_EXISTS);
+        }
+        // 2.计算总价
+        int total = courseInfos.stream().mapToInt(CourseSimpleInfoDTO::getPrice).sum();
+        // TODO 3.计算折扣
+        int discountAmount = 0;
+        // 4.生成订单id
+        long orderId = IdWorker.getId();
+        // 5.组织返回
+        OrderConfirmVO vo = new OrderConfirmVO();
+        vo.setOrderId(orderId);
+        vo.setTotalAmount(total);
+        vo.setDiscountAmount(discountAmount);
+        return vo;
     }
 
     private OrderDetail packageOrderDetail(CourseSimpleInfoDTO courseInfo, Order order) {
@@ -276,10 +295,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         List<OrderDetail> details = detailService.queryByOrderIds(orderIds);
         // 4.2.将订单明细分组，key是订单id，值是订单下的所有detail
         Map<Long, List<OrderDetailVO>> detailMap = details.stream()
-                .map(od -> BeanUtils.copyBean(od, OrderDetailVO.class, (d, v) -> v.setCanRefund(
-                        // 订单已经支付，且 退款没有在进行中，标记为可退款状态
-                        OrderStatus.canRefund(d.getStatus()) && !RefundStatus.inProgress(v.getRefundStatus())
-                )))
+                .map(od -> BeanUtils.copyBean(od, OrderDetailVO.class))
                 .collect(Collectors.groupingBy(OrderDetailVO::getOrderId));
         // 5.转换VO
         List<OrderPageVO> list = new ArrayList<>(orderIds.size());
@@ -307,7 +323,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 3.1.订单
         OrderVO vo = BeanUtils.toBean(order, OrderVO.class);
         // 3.2.订单详情
-        List<OrderDetailVO> dvs = BeanUtils.copyList(details, OrderDetailVO.class);
+        List<OrderDetailVO> dvs = BeanUtils.copyList(details, OrderDetailVO.class, (d, v) -> v.setCanRefund(
+                // 订单已经支付，且 退款没有在进行中，标记为可退款状态
+                OrderStatus.canRefund(d.getStatus()) && !RefundStatus.inProgress(v.getRefundStatus())
+        ));
         vo.setDetails(dvs);
         // 3.3.订单进度
         vo.setProgressNodes(detailService.packageProgressNodes(order, null));

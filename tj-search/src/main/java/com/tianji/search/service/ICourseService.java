@@ -9,4 +9,6 @@ public interface ICourseService {
     void handleCourseUp(Long courseId);
 
     void updateCourseSold(List<Long> courseId, int amount);
+
+    void handleCourseDeletes(List<Long> courseIds);
 }

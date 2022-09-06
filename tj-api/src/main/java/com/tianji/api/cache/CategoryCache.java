@@ -1,17 +1,14 @@
 package com.tianji.api.cache;
 
-import cn.hutool.core.thread.ThreadUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.tianji.api.client.course.CategoryClient;
 import com.tianji.api.dto.course.CategoryBasicDTO;
 import com.tianji.common.utils.CollUtils;
 import lombok.RequiredArgsConstructor;
 
-import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -67,6 +64,21 @@ public class CategoryCache {
         }
         // 3.返回结果
         return sb.deleteCharAt(sb.length() - 1).toString();
+    }
+
+    public List<String> getCategoryNameList(List<Long> ids) {
+        if (ids == null || ids.size() == 0) {
+            return CollUtils.emptyList();
+        }
+        // 1.读取分类缓存
+        Map<Long, CategoryBasicDTO> map = getCategoryMap();
+        // 2.根据id查询分类名称并组装
+        List<String> list = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            list.add(map.get(id).getName());
+        }
+        // 3.返回结果
+        return list;
     }
 
     public List<CategoryBasicDTO> queryCategoryByIds(List<Long> ids) {

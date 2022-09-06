@@ -1,8 +1,7 @@
 package com.tianji.course.domain.po;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;

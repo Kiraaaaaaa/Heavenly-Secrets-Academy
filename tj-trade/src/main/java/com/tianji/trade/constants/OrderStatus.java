@@ -49,6 +49,6 @@ public enum OrderStatus implements BaseEnum {
     }
 
     public static boolean canRefund(Integer value) {
-        return PAYED.equalsValue(value) || REFUNDED.equalsValue(value);
+        return PAYED.equalsValue(value);
     }
 }

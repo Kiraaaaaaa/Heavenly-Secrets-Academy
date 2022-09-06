@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.course.CourseClient;
-import com.tianji.api.client.order.OrderClient;
+import com.tianji.api.client.order.TradeClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.course.MediaQuoteDTO;
 import com.tianji.api.dto.course.SectionInfoDTO;
@@ -49,7 +49,7 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
 
     private final CourseClient courseClient;
 
-    private final OrderClient orderClient;
+    private final TradeClient tradeClient;
 
     private final UserClient userClient;
 
@@ -64,7 +64,7 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
         SectionInfoDTO sectionInfo = courseClient.sectionInfo(sectionId);
         Long courseId = sectionInfo.getCourseId();
         // 2.查询用户课程表，是否是购买过的课程
-        Boolean isMyLesson = orderClient.checkMyLesson(courseId);
+        Boolean isMyLesson = tradeClient.checkMyLesson(courseId);
 
         if(BooleanUtils.isTrue(isMyLesson)){
             // 2.1.是，查询媒资信息，直接获取签名

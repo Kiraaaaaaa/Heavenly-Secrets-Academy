@@ -21,7 +21,7 @@ public interface MqConstants {
         String PAY_EXCHANGE = "pay.topic";
     }
     interface Queue {
-        String ERROR_QUEUE_PREFIX = "queue.error.";
+        String ERROR_QUEUE_TEMPLATE = "error.{}.queue";
     }
     interface Key{
         /*课程有关的 RoutingKey*/

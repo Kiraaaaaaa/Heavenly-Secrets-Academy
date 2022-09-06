@@ -27,10 +27,6 @@
                ud.job, ud.province, ud.city, ud.district, ud.intro, ud.photo, ud.role_id
         FROM `user` u
                  LEFT JOIN user_detail ud ON u.id = ud.id
-
-        <if test="type != null">
-            WHERE u.type = ${type}
-        </if>
         ${ew.customSqlSegment}
     </select>
 </mapper>

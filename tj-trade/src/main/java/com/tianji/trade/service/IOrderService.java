@@ -7,6 +7,7 @@ import com.tianji.trade.domain.po.Order;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.tianji.trade.domain.po.OrderDetail;
 import com.tianji.trade.domain.query.OrderPageQuery;
+import com.tianji.trade.domain.vo.OrderConfirmVO;
 import com.tianji.trade.domain.vo.OrderPageVO;
 import com.tianji.trade.domain.vo.OrderVO;
 import com.tianji.trade.domain.vo.PlaceOrderResultVO;
@@ -42,5 +43,7 @@ public interface IOrderService extends IService<Order> {
     void handlePaySuccess(PayResultDTO payResult);
 
     PlaceOrderResultVO enrolledFreeCourse(Long courseId);
+
+    OrderConfirmVO prePlaceOrder(List<Long> courseIds);
 
 }

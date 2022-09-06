@@ -24,18 +24,14 @@ class CourseRepositoryTest {
         course.setCategoryIdLv2(2000L + RandomUtils.randomInt(1,9));
         course.setCategoryIdLv3(3007L);
         course.setCoverUrl("default-cover-url.jpg");
-        course.setDuration(10000 + RandomUtils.randomInt(20000));
         course.setFree(RandomUtils.randomBoolean());
         course.setName("Java实战课");
         course.setPublishTime(time);
         course.setScore(30 + RandomUtils.randomInt(20));
         course.setSections(10 + RandomUtils.randomInt(10));
         course.setSold(200 + RandomUtils.randomInt(1000));
-        course.setStatus(1);
         course.setTeacher(1548889371405492225L);
         course.setType(2);
-        course.setUpdater(2L);
-        course.setUpdateTime(time);
         repository.save(course);
     }
 

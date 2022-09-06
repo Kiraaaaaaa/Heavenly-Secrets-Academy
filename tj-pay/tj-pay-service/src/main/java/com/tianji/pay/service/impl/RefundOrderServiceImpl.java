@@ -210,7 +210,7 @@ public class RefundOrderServiceImpl extends ServiceImpl<RefundOrderMapper, Refun
         page.addOrder(new OrderItem("id", true));
         // 2.查询
         Page<RefundOrder> result = lambdaQuery()
-                .eq(RefundOrder::getStatus, RefundStatus.UN_KNOWN)
+                .eq(RefundOrder::getStatus, RefundStatus.UN_KNOWN.getValue())
                 .page(page);
         return PageDTO.of(result);
     }

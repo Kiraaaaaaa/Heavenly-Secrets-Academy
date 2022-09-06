@@ -45,4 +45,6 @@ public interface CourseRepository{
     void incrementSold(List<Long> courseIds, int amount);
 
     void saveAll(List<Course> list);
+
+    void deleteByIds(List<Long> courseIds);
 }

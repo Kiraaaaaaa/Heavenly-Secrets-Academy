@@ -152,4 +152,25 @@ public class CourseRepositoryImpl implements CourseRepository {
             throw new CommonException(SAVE_COURSE_ERROR, e);
         }
     }
+
+    @Override
+    public void deleteByIds(List<Long> courseIds) {
+        // 1.创建BulkRequest
+        BulkRequest request = new BulkRequest(INDEX_NAME);
+        // 2.添加参数
+        for (Long courseId : courseIds) {
+            request.add(new DeleteRequest(INDEX_NAME, courseId.toString()));
+        }
+        // 3.批处理
+        try {
+            BulkResponse bulkResponse = restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
+            for (BulkItemResponse itemResponse : bulkResponse.getItems()) {
+                if (itemResponse.status().compareTo(RestStatus.BAD_REQUEST) >= 0) {
+                    log.error("批处理失败，id:{}, 原因:{}", itemResponse.getId(), itemResponse.getFailureMessage());
+                }
+            }
+        } catch (IOException e) {
+            throw new CommonException(SAVE_COURSE_ERROR, e);
+        }
+    }
 }
