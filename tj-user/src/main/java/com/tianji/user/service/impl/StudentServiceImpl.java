@@ -1,7 +1,9 @@
 package com.tianji.user.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.api.client.order.TradeClient;
 import com.tianji.common.domain.dto.PageDTO;
+import com.tianji.common.enums.UserType;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.RandomUtils;
@@ -11,16 +13,17 @@ import com.tianji.user.domain.po.User;
 import com.tianji.user.domain.po.UserDetail;
 import com.tianji.user.domain.query.UserPageQuery;
 import com.tianji.user.domain.vo.StudentPageVo;
-import com.tianji.common.enums.UserType;
 import com.tianji.user.service.IStudentService;
 import com.tianji.user.service.IUserDetailService;
 import com.tianji.user.service.IUserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -31,12 +34,12 @@ import java.util.List;
  * @since 2022-07-12
  */
 @Service
+@RequiredArgsConstructor
 public class StudentServiceImpl implements IStudentService {
 
-    @Autowired
-    private IUserService userService;
-    @Autowired
-    private IUserDetailService detailService;
+    private final IUserService userService;
+    private final IUserDetailService detailService;
+    private final TradeClient tradeClient;
 
     @Override
     @Transactional
@@ -71,13 +74,18 @@ public class StudentServiceImpl implements IStudentService {
         if (CollUtils.isEmpty(records)) {
             return PageDTO.empty(page);
         }
-        // 2.处理vo
+
+        // 2.查询购买的课程数量
+        List<Long> stuIds = records.stream().map(UserDetail::getId).collect(Collectors.toList());
+        Map<Long, Integer> numMap = tradeClient.countEnrollCourseOfStudent(stuIds);
+
+        // 3.处理vo
         List<StudentPageVo> list = new ArrayList<>(records.size());
         for (UserDetail r : records) {
             StudentPageVo v = BeanUtils.toBean(r, StudentPageVo.class);
             list.add(v);
+            v.setCourseAmount(numMap.get(r.getId()));
         }
-        // TODO 3.查询购买的课程数量
         return new PageDTO<>(page.getTotal(), page.getPages(), list);
     }
 }

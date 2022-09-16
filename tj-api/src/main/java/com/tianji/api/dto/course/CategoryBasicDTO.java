@@ -11,4 +11,6 @@ public class CategoryBasicDTO {
     private Long id;
     @ApiModelProperty(value = "分类名称", example = "Java")
     private String name;
+    @ApiModelProperty(value = "父分类id", example = "0")
+    private Long parentId;
 }

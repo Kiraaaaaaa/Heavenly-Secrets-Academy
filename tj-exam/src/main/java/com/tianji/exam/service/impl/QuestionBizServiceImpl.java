@@ -74,9 +74,6 @@ public class QuestionBizServiceImpl extends ServiceImpl<QuestionBizMapper, Quest
         // 1.统计biz及对应题目的分数和
         List<IdAndNumDTO> list = baseMapper.countQuestionScoresByBizIds(bizIds);
         // 2.数据处理
-        if (CollUtils.isEmpty(list)) {
-            return CollUtils.emptyMap();
-        }
-        return list.stream().collect(Collectors.toMap(IdAndNumDTO::getId, i -> i.getNum().intValue()));
+        return IdAndNumDTO.toMap(list);
     }
 }

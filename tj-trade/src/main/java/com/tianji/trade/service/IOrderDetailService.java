@@ -45,4 +45,6 @@ public interface IOrderDetailService extends IService<OrderDetail> {
     Boolean checkCourseOrderInfo(Long courseId);
 
     Map<Long, Integer> countEnrollNumOfCourse(List<Long> courseIdList);
+
+    Map<Long, Integer> countEnrollCourseOfStudent(List<Long> studentIds);
 }

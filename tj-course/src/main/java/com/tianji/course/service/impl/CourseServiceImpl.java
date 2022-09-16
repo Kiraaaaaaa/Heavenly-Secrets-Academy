@@ -204,14 +204,12 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     @Override
     public List<SubNumAndCourseNumDTO> countSubjectNumAndCourseNumOfTeacher(List<Long> teacherIds) {
 
-        List<IdAndNumDTO> idAndNumDTOS = baseMapper.countCourseNumOfTeacher(teacherIds);
         //老师id和课程数量(已上架、已下架、已过期)
-        Map<Long, Long> teacherIdAndCourseNumMap = CollUtils.isEmpty(idAndNumDTOS) ? new HashMap<>() :
-                idAndNumDTOS.stream().collect(Collectors.toMap(IdAndNumDTO::getId, IdAndNumDTO::getNum));
+        Map<Long, Integer> teacherIdAndCourseNumMap =
+                IdAndNumDTO.toMap(baseMapper.countCourseNumOfTeacher(teacherIds));
         //待上架
-        List<IdAndNumDTO> idAndNumDTOS2 = courseDraftMapper.countCourseNumOfTeacher(teacherIds);
-        Map<Long, Long> teacherIdAndCourseNumMap2 = CollUtils.isEmpty(idAndNumDTOS2) ? new HashMap<>() :
-                idAndNumDTOS2.stream().collect(Collectors.toMap(IdAndNumDTO::getId, IdAndNumDTO::getNum));
+        Map<Long, Integer> teacherIdAndCourseNumMap2 =
+                IdAndNumDTO.toMap(courseDraftMapper.countCourseNumOfTeacher(teacherIds));
 
 
         //老师id和出题数量
@@ -223,8 +221,8 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
             subNumAndCourseNumDTOS.add(new SubNumAndCourseNumDTO(
                     teacherId,
                     //课程数量 待上架的数量+ （已上架、已下架、已过期）
-                    NumberUtils.null2Zero(teacherIdAndCourseNumMap.get(teacherId)).intValue() +
-                            NumberUtils.null2Zero(teacherIdAndCourseNumMap2.get(teacherId)).intValue(),
+                    NumberUtils.null2Zero(teacherIdAndCourseNumMap.get(teacherId)) +
+                            NumberUtils.null2Zero(teacherIdAndCourseNumMap2.get(teacherId)),
                     //出题数量
                     NumberUtils.null2Zero(teacherIdAndSubjectNumMap.get(teacherId))));
         }

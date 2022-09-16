@@ -4,7 +4,7 @@ package com.tianji.common.utils;
 import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.exceptions.BadRequestException;
 
-import java.util.List;
+import java.util.Map;
 
 public class AssertUtils {
     public static void equals(Object obj1, Object obj2, String ... message){
@@ -51,8 +51,13 @@ public class AssertUtils {
         throw new BadRequestException(msg);
     }
 
-    public static void isNotEmpty(List<?> list, String ... message) {
-        if(CollUtils.isEmpty(list)){
+    public static void isNotEmpty(Iterable<?> coll, String ... message) {
+        if(CollUtils.isEmpty(coll)){
+            handleException(message);
+        }
+    }
+    public static void isNotEmpty(Map<?, ?> map, String ... message) {
+        if(CollUtils.isEmpty(map)){
             handleException(message);
         }
     }

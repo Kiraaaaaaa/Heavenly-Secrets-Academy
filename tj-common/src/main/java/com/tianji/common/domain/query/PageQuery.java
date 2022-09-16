@@ -2,6 +2,7 @@ package com.tianji.common.domain.query;
 
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.common.constants.Constant;
 import com.tianji.common.utils.StringUtils;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -56,5 +57,8 @@ public class PageQuery {
         orderItem.setColumn(sortBy);
         page.addOrder(orderItem);
         return page;
+    }
+    public <T> Page<T> toMpPageDefaultSortByCreateTimeDesc() {
+        return toMpPage(Constant.DATA_FIELD_NAME_CREATE_TIME_CAMEL, false);
     }
 }

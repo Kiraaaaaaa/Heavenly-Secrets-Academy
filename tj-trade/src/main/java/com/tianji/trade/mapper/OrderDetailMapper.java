@@ -23,4 +23,6 @@ public interface OrderDetailMapper extends BaseMapper<OrderDetail> {
     List<Long> queryCourseIdsByOrderId(Long orderId);
 
     List<IdAndNumDTO> countEnrollNumOfCourse(@Param("ew") QueryWrapper<OrderDetail> wrapper);
+
+    List<IdAndNumDTO> countEnrollCourseOfStudent(@Param("ew") QueryWrapper<OrderDetail> wrapper);
 }

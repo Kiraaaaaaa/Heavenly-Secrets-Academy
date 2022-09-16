@@ -8,4 +8,10 @@
         ${ew.customSqlSegment}
         GROUP BY course_id
     </select>
+    <select id="countEnrollCourseOfStudent" resultType="com.tianji.api.dto.IdAndNumDTO" >
+        SELECT user_id AS id, COUNT(course_id) AS num
+        FROM order_detail
+                 ${ew.customSqlSegment}
+        GROUP BY user_id
+    </select>
 </mapper>

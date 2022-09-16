@@ -299,12 +299,26 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
         QueryWrapper<OrderDetail> wrapper = new QueryWrapper<>();
         wrapper.lambda()
                 .in(OrderDetail::getCourseId, courseIdList)
-                .in(OrderDetail::getStatus, courseIdList, PAYED.getValue(), FINISHED.getValue(), ENROLLED.getValue());
+                .in(OrderDetail::getStatus, PAYED.getValue(), FINISHED.getValue(), ENROLLED.getValue());
 
         // 2.统计
         List<IdAndNumDTO> list = baseMapper.countEnrollNumOfCourse(wrapper);
 
         // 3.转换返回
-        return list.stream().collect(Collectors.toMap(IdAndNumDTO::getId, d -> d.getNum().intValue()));
+        return IdAndNumDTO.toMap(list);
+    }
+
+    @Override
+    public Map<Long, Integer> countEnrollCourseOfStudent(List<Long> studentIds) {
+        // 1.条件构造
+        QueryWrapper<OrderDetail> wrapper = new QueryWrapper<>();
+        wrapper.lambda()
+                .in(OrderDetail::getUserId, studentIds)
+                .in(OrderDetail::getStatus, PAYED.getValue(), FINISHED.getValue(), ENROLLED.getValue());
+        // 2.统计
+        List<IdAndNumDTO> list = baseMapper.countEnrollCourseOfStudent(wrapper);
+
+        // 3.转换返回
+        return IdAndNumDTO.toMap(list);
     }
 }

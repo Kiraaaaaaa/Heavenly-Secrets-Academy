@@ -13,6 +13,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -34,9 +36,24 @@ public class PageDTO<T> {
     }
 
     public static <T> PageDTO<T> of(Page<T> page) {
+        if(page == null){
+            return new PageDTO<>();
+        }
+        if (CollUtils.isEmpty(page.getRecords())) {
+            return empty(page);
+        }
         return new PageDTO<>(page.getTotal(), page.getPages(), page.getRecords());
     }
-
+    public static <T,R> PageDTO<T> of(Page<R> page, Function<R, T> mapper) {
+        if(page == null){
+            return new PageDTO<>();
+        }
+        if (CollUtils.isEmpty(page.getRecords())) {
+            return empty(page);
+        }
+        return new PageDTO<>(page.getTotal(), page.getPages(),
+                page.getRecords().stream().map(mapper).collect(Collectors.toList()));
+    }
     public static <T> PageDTO<T> of(Page<?> page, List<T> list) {
         return new PageDTO<>(page.getTotal(), page.getPages(), list);
     }

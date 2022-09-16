@@ -19,6 +19,8 @@ public class StaffVO {
     private String name;
     @ApiModelProperty(value = "角色id", example = "5")
     private Long roleId;
+    @ApiModelProperty(value = "角色名称", example = "5")
+    private String roleName;
     @ApiModelProperty(value = "注册时间", example = "2022-07-22")
     private LocalDateTime createTime;
     @ApiModelProperty(value = "账号状态", example = "0")

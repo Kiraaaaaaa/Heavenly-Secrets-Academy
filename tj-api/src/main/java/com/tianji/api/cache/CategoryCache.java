@@ -90,4 +90,24 @@ public class CategoryCache {
                 .map(map::get)
                 .collect(Collectors.toList());
     }
+
+    public List<String> getNameByLv3Ids(List<Long> lv3Ids) {
+        Map<Long, CategoryBasicDTO> map = getCategoryMap();
+        List<String> list = new ArrayList<>(lv3Ids.size());
+        for (Long lv3Id : lv3Ids) {
+            CategoryBasicDTO lv3 = map.get(lv3Id);
+            CategoryBasicDTO lv2 = map.get(lv3.getParentId());
+            CategoryBasicDTO lv1 = map.get(lv2.getParentId());
+            list.add(lv1.getName() + lv2.getName() + lv3.getName());
+        }
+        return list;
+    }
+
+    public String getNameByLv3Id(Long lv3Id) {
+        Map<Long, CategoryBasicDTO> map = getCategoryMap();
+        CategoryBasicDTO lv3 = map.get(lv3Id);
+        CategoryBasicDTO lv2 = map.get(lv3.getParentId());
+        CategoryBasicDTO lv1 = map.get(lv2.getParentId());
+        return lv1.getName() + lv2.getName() + lv3.getName();
+    }
 }

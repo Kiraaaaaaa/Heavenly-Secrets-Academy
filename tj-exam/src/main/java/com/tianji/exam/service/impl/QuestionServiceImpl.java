@@ -207,9 +207,6 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         // 1.统计
         List<IdAndNumDTO> list = baseMapper.countQuestionOfCreater(createrIds);
         // 2.处理结果
-        if (CollUtils.isEmpty(list)) {
-            return CollUtils.emptyMap();
-        }
-        return list.stream().collect(Collectors.toMap(IdAndNumDTO::getId, i -> i.getNum().intValue()));
+        return IdAndNumDTO.toMap(list);
     }
 }

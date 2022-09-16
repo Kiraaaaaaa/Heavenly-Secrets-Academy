@@ -55,4 +55,10 @@ public class OrderDetailController {
     public Map<Long, Integer> countEnrollNumOfCourse(@RequestParam("courseIdList") List<Long> courseIdList){
         return detailService.countEnrollNumOfCourse(courseIdList);
     }
+
+    @ApiOperation("统计学生报名课程数量")
+    @GetMapping("/enrollCourse")
+    public Map<Long, Integer> countEnrollCourseOfStudent(@RequestParam("studentIds") List<Long> studentIds){
+        return detailService.countEnrollCourseOfStudent(studentIds);
+    }
 }

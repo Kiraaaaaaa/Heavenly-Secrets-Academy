@@ -23,4 +23,9 @@ public interface RegexConstants extends RegexPool {
      * 验证码正则, 6位数字或字母
      */
     String VERIFY_CODE_PATTERN = "^[a-zA-Z\\d]{6}$";
+
+    /**
+     * 优惠券兑换码模板
+     */
+    String COUPON_CODE_PATTERN = "^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$";
 }
