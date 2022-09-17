@@ -21,7 +21,6 @@
         <module>tj-pay</module>
         <module>tj-trade</module>
         <module>tj-exam</module>
-        <module>tj-promotion</module>
     </modules>
     <packaging>pom</packaging>
 
