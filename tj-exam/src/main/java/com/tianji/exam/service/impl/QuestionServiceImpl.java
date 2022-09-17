@@ -117,7 +117,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .in(CollUtils.isNotEmpty(query.getTypes()), Question::getType, query.getTypes())
                 .in(CollUtils.isNotEmpty(query.getCateIds()), Question::getCateId3, query.getCateIds())
                 .like(StringUtils.isNotBlank(query.getKeyword()), Question::getName, query.getKeyword())
-                .page(query.toMpPage(Constant.DATA_FIELD_NAME_UPDATE_TIME_CAMEL, false));
+                .page(query.toMpPage(Constant.DATA_FIELD_NAME_UPDATE_TIME, false));
         // 2.判空
         List<Question> records = page.getRecords();
         if (CollUtils.isEmpty(records)) {

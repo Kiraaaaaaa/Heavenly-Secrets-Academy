@@ -7,11 +7,13 @@ import com.tianji.common.utils.StringUtils;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import javax.validation.constraints.Min;
 
 @Data
 @ApiModel(description = "分页请求参数")
+@Accessors(chain = true)
 public class PageQuery {
     public static final Integer DEFAULT_PAGE_SIZE = 20;
     public static final Integer DEFAULT_PAGE_NUM = 1;
@@ -47,7 +49,7 @@ public class PageQuery {
     }
 
     public <T> Page<T> toMpPage(String defaultSortBy, boolean isAsc) {
-        if (StringUtils.isEmpty(sortBy)){
+        if (StringUtils.isBlank(sortBy)){
             sortBy = defaultSortBy;
             this.isAsc = isAsc;
         }
@@ -59,6 +61,6 @@ public class PageQuery {
         return page;
     }
     public <T> Page<T> toMpPageDefaultSortByCreateTimeDesc() {
-        return toMpPage(Constant.DATA_FIELD_NAME_CREATE_TIME_CAMEL, false);
+        return toMpPage(Constant.DATA_FIELD_NAME_CREATE_TIME, false);
     }
 }

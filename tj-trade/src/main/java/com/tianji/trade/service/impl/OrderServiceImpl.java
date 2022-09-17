@@ -8,7 +8,6 @@ import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.CourseSimpleInfoDTO;
 import com.tianji.api.dto.order.OrderBasicDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
-import com.tianji.common.constants.Constant;
 import com.tianji.common.constants.MqConstants;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
@@ -277,7 +276,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     public PageDTO<OrderPageVO> queryMyOrderPage(OrderPageQuery pageQuery) {
         Long userId = UserContext.getUser();
         // 1.分页排序条件
-        Page<Order> p = pageQuery.toMpPage(Constant.DATA_FIELD_NAME_CREATE_TIME, false);
+        Page<Order> p = pageQuery.toMpPageDefaultSortByCreateTimeDesc();
         // 2.分页查询订单
         Integer status = pageQuery.getStatus();
         Page<Order> page = lambdaQuery()

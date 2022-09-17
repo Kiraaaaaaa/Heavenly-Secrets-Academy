@@ -8,7 +8,6 @@ import com.tianji.api.cache.RoleCache;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.IdAndNumDTO;
 import com.tianji.api.dto.user.UserDTO;
-import com.tianji.common.constants.Constant;
 import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
@@ -87,7 +86,7 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
     @Override
     public PageDTO<OrderDetailPageVO> queryDetailForPage(OrderDetailPageQuery query) {
         // 1.分页和排序条件
-        Page<OrderDetail> p = query.toMpPage(Constant.DATA_FIELD_NAME_CREATE_TIME, false);
+        Page<OrderDetail> p = query.toMpPageDefaultSortByCreateTimeDesc();
         // 2.可能有用户条件
         Long userId = null;
         if (StringUtils.isNotBlank(query.getMobile())) {
