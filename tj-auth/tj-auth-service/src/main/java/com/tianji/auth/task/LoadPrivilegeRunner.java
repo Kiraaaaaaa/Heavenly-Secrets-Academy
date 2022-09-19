@@ -6,10 +6,10 @@ import com.tianji.auth.common.domain.PrivilegeRoleDTO;
 import com.tianji.auth.service.IPrivilegeService;
 import com.tianji.auth.util.PrivilegeCache;
 import com.tianji.common.utils.RequestIdUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,18 +18,12 @@ import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class LoadPrivilegeRunner{
 
     private final IPrivilegeService privilegeService;
     private final PrivilegeCache privilegeCache;
     private final RedissonClient redissonClient;
-
-    @Autowired
-    public LoadPrivilegeRunner(IPrivilegeService privilegeService, PrivilegeCache privilegeCache, RedissonClient redissonClient) {
-        this.privilegeService = privilegeService;
-        this.privilegeCache = privilegeCache;
-        this.redissonClient = redissonClient;
-    }
 
     @Scheduled(fixedRate = 180000)
     public void loadPrivilegeCache(){
