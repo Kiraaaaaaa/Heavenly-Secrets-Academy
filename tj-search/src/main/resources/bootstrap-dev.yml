@@ -5,7 +5,7 @@ spring:
       discovery:
         namespace: c975b6f4-de7e-40ad-9b15-4a245ce7a2ef
         group: DEFAULT_GROUP
-        ip: 192.168.150.1
+        ip: 192.168.150.101
   elasticsearch:
     uris: http://192.168.150.101:9200
 logging:

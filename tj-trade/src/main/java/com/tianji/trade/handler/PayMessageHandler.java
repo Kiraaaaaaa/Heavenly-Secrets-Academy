@@ -3,7 +3,9 @@ package com.tianji.trade.handler;
 import com.tianji.common.constants.MqConstants;
 import com.tianji.pay.sdk.dto.PayResultDTO;
 import com.tianji.pay.sdk.dto.RefundResultDTO;
+import com.tianji.trade.domain.dto.OrderDelayQueryDTO;
 import com.tianji.trade.service.IOrderService;
+import com.tianji.trade.service.IPayService;
 import com.tianji.trade.service.IRefundApplyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ public class PayMessageHandler {
 
     private final IOrderService orderService;
     private final IRefundApplyService refundApplyService;
+    private final IPayService payService;
 
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(name = "trade.pay.success.queue", durable = "true"),
@@ -40,5 +43,15 @@ public class PayMessageHandler {
     public void listenRefundResult(RefundResultDTO refundResult){
         log.debug("收到退款变更成功通知：{}", refundResult);
         refundApplyService.handleRefundResult(refundResult);
+    }
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "trade.delay.order.query", durable = "true"),
+            exchange = @Exchange(name = MqConstants.Exchange.TRADE_DELAY_EXCHANGE, delayed = "true", type = ExchangeTypes.TOPIC),
+            key = MqConstants.Key.ORDER_DELAY_KEY
+    ))
+    public void listenOrderDelayQueryMessage(OrderDelayQueryDTO message){
+        log.debug("收到订单延迟查询通知：{}", message);
+        payService.queryPayResult(message);
     }
 }

@@ -1,5 +1,6 @@
 package com.tianji.trade.service.impl;
 
+import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.AssertUtils;
@@ -9,9 +10,11 @@ import com.tianji.pay.sdk.client.PayClient;
 import com.tianji.pay.sdk.constants.PayType;
 import com.tianji.pay.sdk.dto.PayApplyDTO;
 import com.tianji.pay.sdk.dto.PayChannelDTO;
+import com.tianji.pay.sdk.dto.PayResultDTO;
 import com.tianji.trade.config.TradeProperties;
 import com.tianji.trade.constants.OrderStatus;
 import com.tianji.trade.constants.TradeErrorInfo;
+import com.tianji.trade.domain.dto.OrderDelayQueryDTO;
 import com.tianji.trade.domain.dto.PayApplyFormDTO;
 import com.tianji.trade.domain.po.Order;
 import com.tianji.trade.domain.po.OrderDetail;
@@ -20,14 +23,19 @@ import com.tianji.trade.service.IOrderDetailService;
 import com.tianji.trade.service.IOrderService;
 import com.tianji.trade.service.IPayService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.tianji.common.constants.MqConstants.Exchange.TRADE_DELAY_EXCHANGE;
+import static com.tianji.common.constants.MqConstants.Key.ORDER_DELAY_KEY;
 import static com.tianji.trade.constants.TradeErrorInfo.ORDER_NOT_EXISTS;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PayServiceImpl implements IPayService {
@@ -36,6 +44,7 @@ public class PayServiceImpl implements IPayService {
     private final IOrderService orderService;
     private final IOrderDetailService detailService;
     private final TradeProperties tradeProperties;
+    private final RabbitMqHelper mqHelper;
 
     @Override
     public List<PayChannelVO> queryPayChannels() {
@@ -80,6 +89,46 @@ public class PayServiceImpl implements IPayService {
                 .payType(PayType.NATIVE.getValue())
                 .payChannelCode(payApply.getPayChannelCode())
                 .build();
-        return payClient.applyPayOrder(payApplyDTO);
+        String url = payClient.applyPayOrder(payApplyDTO);
+        // 6.通过延迟队列，异步查询支付结果
+        sendDelayQueryMessage(OrderDelayQueryDTO.init(orderId));
+        return url;
+    }
+
+    private void sendDelayQueryMessage(OrderDelayQueryDTO message) {
+        mqHelper.sendDelayMessage(
+                TRADE_DELAY_EXCHANGE,
+                ORDER_DELAY_KEY,
+                message, Duration.ofMillis(message.removeFirst()));
+    }
+
+    @Override
+    public void queryPayResult(OrderDelayQueryDTO message) {
+        // 1.获取订单信息
+        Long orderId = message.getOrderId();
+        Order order = orderService.getById(orderId);
+        if (order == null) {
+            log.error("要查询状态的订单：{}不存在", orderId);
+            return;
+        }
+        // 2.判断订单状态
+        if (!OrderStatus.NO_PAY.equalsValue(order.getStatus())) {
+            // 订单已经支付或关闭，任务结束
+            return;
+        }
+        // 3.查询支付状态
+        PayResultDTO payResult = payClient.queryPayResult(orderId);
+        int status = payResult.getStatus();
+        if(PayResultDTO.SUCCESS != status){
+            // 3.1.支付中或支付失败，需要重试查询
+            if(message.getDelayMillis().size() == 0){
+                // 重试次数用尽，结束
+                return;
+            }
+            // 发送延迟查询消息，再次查询支付状态
+            sendDelayQueryMessage(message);
+        }
+        // 3.2.支付成功
+        orderService.handlePaySuccess(payResult);
     }
 }

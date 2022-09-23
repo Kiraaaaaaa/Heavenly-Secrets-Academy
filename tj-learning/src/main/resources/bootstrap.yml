@@ -1,5 +1,5 @@
 server:
-  port: 8087  #端口
+  port: 8090  #端口
   tomcat:
     uri-encoding: UTF-8   #服务编码
 spring:

@@ -19,6 +19,8 @@ public interface MqConstants {
 
         /*支付有关的交换机*/
         String PAY_EXCHANGE = "pay.topic";
+        /*交易服务延迟任务交换机*/
+        String TRADE_DELAY_EXCHANGE = "trade.delay.topic";
     }
     interface Queue {
         String ERROR_QUEUE_TEMPLATE = "error.{}.queue";
@@ -61,5 +63,6 @@ public interface MqConstants {
         String PAY_SUCCESS = "pay.success";
         String REFUND_CHANGE = "refund.status.change";
 
+        String ORDER_DELAY_KEY = "delay.order.query";
     }
 }
