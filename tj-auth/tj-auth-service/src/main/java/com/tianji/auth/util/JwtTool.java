@@ -2,22 +2,26 @@ package com.tianji.auth.util;
 
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.signers.JWTSigner;
+import cn.hutool.jwt.signers.JWTSignerUtil;
 import com.tianji.auth.common.constants.JwtConstants;
 import com.tianji.common.domain.dto.LoginUserDTO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.security.KeyPair;
 import java.util.Date;
 
 import static com.tianji.auth.common.constants.JwtConstants.JWT_TOKEN_TTL;
 
 @Component
-@RequiredArgsConstructor
 public class JwtTool {
     private final StringRedisTemplate stringRedisTemplate;
     private final JWTSigner jwtSigner;
 
+    public JwtTool(StringRedisTemplate stringRedisTemplate, KeyPair keyPair) {
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.jwtSigner = JWTSignerUtil.createSigner("rs256", keyPair);
+    }
     /**
      * 创建 access-token
      * @param userDTO 用户信息
