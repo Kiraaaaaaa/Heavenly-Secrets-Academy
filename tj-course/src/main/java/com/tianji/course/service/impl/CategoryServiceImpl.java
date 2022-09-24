@@ -4,15 +4,13 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.api.constants.CourseStatus;
 import com.tianji.common.constants.Constant;
 import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.enums.CommonStatus;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.exceptions.DbException;
-import com.tianji.common.utils.BeanUtils;
-import com.tianji.common.utils.CollUtils;
-import com.tianji.common.utils.NumberUtils;
-import com.tianji.common.utils.StringUtils;
+import com.tianji.common.utils.*;
 import com.tianji.course.constants.CourseConstants;
 import com.tianji.course.constants.CourseErrorInfo;
 import com.tianji.course.constants.RedisConstants;
@@ -21,12 +19,14 @@ import com.tianji.course.domain.dto.CategoryDisableOrEnableDTO;
 import com.tianji.course.domain.dto.CategoryListDTO;
 import com.tianji.course.domain.dto.CategoryUpdateDTO;
 import com.tianji.course.domain.po.Category;
+import com.tianji.course.domain.po.Course;
 import com.tianji.course.domain.vo.CategoryInfoVO;
 import com.tianji.course.domain.vo.CategoryVO;
 import com.tianji.course.domain.vo.SimpleCategoryVO;
 import com.tianji.course.mapper.CategoryMapper;
 import com.tianji.course.mapper.SubjectCategoryMapper;
 import com.tianji.course.service.ICategoryService;
+import com.tianji.course.service.ICourseDraftService;
 import com.tianji.course.service.ICourseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +34,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -61,6 +63,12 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Autowired
     private ICourseService courseService;
+
+    @Autowired
+    private ICourseDraftService courseDraftService;
+
+    @Resource(name = "taskExecutor")
+    private Executor taskExecutor;
 
     @Override
     public List<CategoryVO> list(CategoryListDTO categoryListDTO) {
@@ -216,54 +224,72 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     @Transactional(rollbackFor = {DbException.class, Exception.class})
     public void disableOrEnable(CategoryDisableOrEnableDTO categoryDisableOrEnableDTO) {
-
+        //1.获取禁用/启用的课程分类
         Category category = baseMapper.selectById(categoryDisableOrEnableDTO.getId());
-        if(category == null){ //父id
+        if (category == null) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_CATEGORY_NOT_FOUND);
         }
-        if(category.getParentId() != 0 ) { //校验父级分类
-            if(categoryDisableOrEnableDTO.getStatus().equals(CommonStatus.ENABLE.getValue())){
-                //启用分类
+        //2.校验
+        if (category.getParentId() != 0) { //校验父级分类
+            //2.1启用校验
+            if (categoryDisableOrEnableDTO.getStatus() == CommonStatus.ENABLE.getValue()) {
+                //2.2获取父分类
                 Category parentCategory = baseMapper.selectById(category.getParentId());
-                if(parentCategory == null) {
+                if (parentCategory == null) {
                     log.error("操作异常，根据父类id查询课程分类未查询到，parentId : {}", category.getParentId());
                     throw new BizIllegalException(ErrorInfo.Msg.OPERATE_FAILED);
                 }
-                if (CommonStatus.DISABLE.equalsValue(parentCategory.getStatus())){
-                    // 分类的上一级分类被禁用了，无法开启
+                //2.3父分类禁用下不能启用当前分类
+                if (CommonStatus.DISABLE.getValue() == parentCategory.getStatus()) {
                     throw new BizIllegalException(CourseErrorInfo.Msg.CATEGORY_ENABLE_CANNOT);
                 }
             }
         }
 
+        //3.获取启用/禁用时联动启用的分类
         List<Long> childCategoryIds = new ArrayList<>();
         LambdaQueryWrapper<Category> directQueryWrapper = new LambdaQueryWrapper<>();
         directQueryWrapper.eq(Category::getParentId, categoryDisableOrEnableDTO.getId());
+        //3.1获取启用分类的子分类列表
         List<Category> categories = baseMapper.selectList(directQueryWrapper);
-        if(CollUtils.isNotEmpty(categories)) { //直接子分类
+        if (CollUtils.isNotEmpty(categories)) { //直接子分类
+            //3.2将子类id写入到childCategoryIds中
             childCategoryIds.addAll(categories.stream().map(Category::getId).collect(Collectors.toList()));
         }
-        if(CollUtils.isNotEmpty(childCategoryIds)){ //间接子分类
+        //3.3获取启用分类子分类的子分类列表
+        if (CollUtils.isNotEmpty(childCategoryIds)) {
             LambdaQueryWrapper<Category> inDirectQueryWrapper = new LambdaQueryWrapper<>();
             inDirectQueryWrapper.in(Category::getParentId, childCategoryIds);
             List<Category> inDirectCategorys = baseMapper.selectList(inDirectQueryWrapper);
-            if(CollUtils.isNotEmpty(inDirectCategorys)){
-                childCategoryIds.addAll(inDirectCategorys.stream().map(Category::getId).collect(Collectors.toList()));
+            if (CollUtils.isNotEmpty(inDirectCategorys)) {
+                //3.4将子分类的子分类id列表写入childCategoryIds中
+                childCategoryIds.addAll(inDirectCategorys.stream()
+                        .map(Category::getId).collect(Collectors.toList()));
             }
         }
 
+        //4.更新当前分类，启用/禁用
         int result = this.baseMapper.updateById(BeanUtils.toBean(categoryDisableOrEnableDTO, Category.class));
         if (result <= 0) {
             throw new BizIllegalException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
         }
-        //启用或禁用相关课程
-        if(CollUtils.isNotEmpty(childCategoryIds)) {
-            //子分类同时启用或禁用
+        //5.启用或禁用关联课程分类
+        if (CollUtils.isNotEmpty(childCategoryIds)) {
+            //5.1更新条件
             LambdaUpdateWrapper<Category> updateWrapper = new LambdaUpdateWrapper();
             updateWrapper.in(Category::getId, childCategoryIds);
             Category updateCategory = new Category();
             updateCategory.setStatus(categoryDisableOrEnableDTO.getStatus());
+            //5.2更新关联分类状态
             baseMapper.update(updateCategory, updateWrapper);
+        }
+        //6.课程分类禁用触发课程批量下架
+        if(categoryDisableOrEnableDTO.getStatus() == CommonStatus.DISABLE.getValue()) {
+            Long userId = UserContext.getUser();
+            taskExecutor.execute(() -> {
+                batchDownShelfCourse(category.getId(), category.getLevel(), userId);
+            });
+
         }
     }
 
@@ -520,5 +546,28 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             }
         }
         return pass || CollUtils.isNotEmpty(categoryVO.getChildren());
+    }
+
+    private void batchDownShelfCourse(Long categoryId, Integer level, Long userId) {
+        //1.多线程下设置操作用户id
+        UserContext.setUser(userId);
+        //2.查询需要下架的课程
+        List<Course> courses = courseService.queryByCategoryIdAndLevel(categoryId, level);
+        if(CollUtils.isEmpty(courses)){
+            return;
+        }
+        //3.遍历下架课程
+        for (Course course : courses) {
+            //4.判断状态是否可以下架
+            if(!CourseStatus.SHELF.equals(course.getStatus())){
+                continue;
+            }
+            try {
+                //5.课程下架
+                courseDraftService.downShelf(course.getId());
+            }catch (Exception e) {
+                log.error("课程下架异常");
+            }
+        }
     }
 }

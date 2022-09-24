@@ -62,13 +62,13 @@ public class Role implements Serializable {
     /**
      * 创建者id
      */
-    @TableField(fill = FieldFill.INSERT)
+
     private Long creater;
 
     /**
      * 更新者id
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+
     private Long updater;
     /**
      * 部门id

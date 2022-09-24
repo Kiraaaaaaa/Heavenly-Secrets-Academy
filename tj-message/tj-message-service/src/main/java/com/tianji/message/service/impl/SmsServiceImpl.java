@@ -73,7 +73,7 @@ public class SmsServiceImpl implements ISmsService {
         for (MessageTemplate template : sortedTemplates) {
             try {
                 ISmsHandler smsHandler = smsHandlers.get(template.getPlatformCode());
-                smsHandler.send(smsInfoDTO);
+                smsHandler.send(smsInfoDTO, template);
                 return;
             } catch (Exception e) {
                 log.error("短信发送异常，平台{}, 原因{}, 稍后重试", template.getPlatformCode(), e.getMessage(), e);

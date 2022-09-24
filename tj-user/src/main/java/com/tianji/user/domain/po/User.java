@@ -72,11 +72,11 @@ public class User implements Serializable {
     /**
      * 创建者id
      */
-    @TableField(fill = FieldFill.INSERT)
+
     private Long creater;
     /**
      * 修改者id
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+
     private Long updater;
 }

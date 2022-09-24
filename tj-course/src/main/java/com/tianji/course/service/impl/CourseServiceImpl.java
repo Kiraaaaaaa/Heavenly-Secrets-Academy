@@ -356,6 +356,14 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         });
     }
 
+    @Override
+    public List<Course> queryByCategoryIdAndLevel(Long categoryId, Integer level) {
+        LambdaQueryWrapper<Course> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(level == 1, Course::getFirstCateId, categoryId) //一级课程分类
+                .eq( level == 2, Course::getSecondCateId, categoryId) //二级课程分类
+                .eq(level == 3, Course::getThirdCateId, categoryId); //三级课程分类
+        return baseMapper.selectList(queryWrapper);
+    }
 
     private void sendFinishedCourse(List<Course> finishedCourse) {
         CompletableFuture.runAsync(() -> {

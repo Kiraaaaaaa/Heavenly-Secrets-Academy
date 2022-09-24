@@ -1,7 +1,5 @@
 package com.tianji.auth.domain.po;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.tianji.auth.domain.dto.MenuDTO;
@@ -79,13 +77,13 @@ public class Menu implements Serializable {
     /**
      * 创建者id
      */
-    @TableField(fill = FieldFill.INSERT)
+
     private Long creater;
 
     /**
      * 更新者id
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+
     private Long updater;
 
     /**

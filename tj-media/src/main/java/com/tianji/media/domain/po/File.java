@@ -72,13 +72,13 @@ public class File implements Serializable {
     /**
      * 创建者
      */
-    @TableField(fill = FieldFill.INSERT)
+
     private Long creater;
 
     /**
      * 更新者
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+
     private Long updater;
 
     /**

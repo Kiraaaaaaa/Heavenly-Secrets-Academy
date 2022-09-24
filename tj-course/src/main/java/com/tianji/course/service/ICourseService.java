@@ -87,4 +87,11 @@ public interface ICourseService extends IService<Course> {
      * @return 课程分页数据
      */
     PageDTO<CoursePageVO> queryForPage(CoursePageQuery coursePageQuery);
+    /**
+     * 根据课程分类id查询课程列表
+     * @param categoryId 课程分类id
+     * @param level 课程分类级别
+     * @return 课程列表
+     */
+    List<Course> queryByCategoryIdAndLevel(Long categoryId, Integer level);
 }

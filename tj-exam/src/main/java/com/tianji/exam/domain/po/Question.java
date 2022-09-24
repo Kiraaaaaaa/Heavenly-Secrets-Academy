@@ -93,13 +93,13 @@ public class Question implements Serializable {
     /**
      * 创建人
      */
-    @TableField(fill = FieldFill.INSERT)
+
     private Long creater;
 
     /**
      * 更新人
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+
     private Long updater;
 
 
