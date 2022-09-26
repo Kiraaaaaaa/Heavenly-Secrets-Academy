@@ -2,23 +2,23 @@ package com.tianji.message.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.tianji.message.domain.dto.MessageTemplateFormDTO;
-import com.tianji.message.domain.dto.NoticeTemplateDTO;
-import com.tianji.message.domain.dto.NoticeTemplateFormDTO;
-import com.tianji.message.enums.TemplateStatus;
-import com.tianji.message.domain.query.NoticeTemplatePageQuery;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.StringUtils;
 import com.tianji.message.constants.MessageErrorInfo;
+import com.tianji.message.domain.dto.MessageTemplateFormDTO;
+import com.tianji.message.domain.dto.NoticeTemplateDTO;
+import com.tianji.message.domain.dto.NoticeTemplateFormDTO;
 import com.tianji.message.domain.po.MessageTemplate;
 import com.tianji.message.domain.po.NoticeTemplate;
+import com.tianji.message.domain.query.NoticeTemplatePageQuery;
+import com.tianji.message.enums.TemplateStatus;
 import com.tianji.message.mapper.NoticeTemplateMapper;
 import com.tianji.message.service.IMessageTemplateService;
 import com.tianji.message.service.INoticeTemplateService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,10 +36,10 @@ import java.util.stream.Collectors;
  * @since 2022-08-19
  */
 @Service
+@RequiredArgsConstructor
 public class NoticeTemplateServiceImpl extends ServiceImpl<NoticeTemplateMapper, NoticeTemplate> implements INoticeTemplateService {
 
-    @Autowired
-    private IMessageTemplateService messageTemplateService;
+    private final IMessageTemplateService messageTemplateService;
 
     @Override
     @Transactional

@@ -7,6 +7,7 @@ import com.tianji.auth.service.IRoleMenuService;
 import com.tianji.auth.service.IRolePrivilegeService;
 import com.tianji.auth.service.IRoleService;
 import com.tianji.auth.util.PrivilegeCache;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,17 +22,12 @@ import java.util.List;
  * @since 2022-06-16
  */
 @Service
+@RequiredArgsConstructor
 public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements IRoleService {
 
     private final IRoleMenuService roleMenuService;
     private final IRolePrivilegeService rolePrivilegeService;
     private final PrivilegeCache privilegeCache;
-
-    public RoleServiceImpl(IRoleMenuService roleMenuService, IRolePrivilegeService rolePrivilegeService, PrivilegeCache privilegeCache) {
-        this.roleMenuService = roleMenuService;
-        this.rolePrivilegeService = rolePrivilegeService;
-        this.privilegeCache = privilegeCache;
-    }
 
     @Override
     public boolean exists(Long roleId) {

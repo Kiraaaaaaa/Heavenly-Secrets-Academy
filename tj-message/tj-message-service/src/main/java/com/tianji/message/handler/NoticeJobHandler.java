@@ -6,16 +6,16 @@ import com.tianji.message.domain.po.NoticeTask;
 import com.tianji.message.service.INoticeTaskService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class NoticeJobHandler {
 
-    @Autowired
-    private INoticeTaskService taskService;
+    private final INoticeTaskService taskService;
 
     @XxlJob("publishNoticeJob")
     public void publishNotice(){

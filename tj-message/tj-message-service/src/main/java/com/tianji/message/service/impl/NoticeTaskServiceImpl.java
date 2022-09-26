@@ -3,27 +3,26 @@ package com.tianji.message.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.user.UserClient;
-import com.tianji.message.domain.dto.NoticeTaskDTO;
-import com.tianji.message.domain.dto.NoticeTaskFormDTO;
 import com.tianji.api.dto.user.UserDTO;
-import com.tianji.message.enums.TemplateStatus;
-import com.tianji.message.domain.query.NoticeTaskPageQuery;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.MarkedRunnable;
 import com.tianji.common.utils.StringUtils;
 import com.tianji.message.constants.MessageErrorInfo;
+import com.tianji.message.domain.dto.NoticeTaskDTO;
+import com.tianji.message.domain.dto.NoticeTaskFormDTO;
 import com.tianji.message.domain.po.NoticeTask;
 import com.tianji.message.domain.po.NoticeTemplate;
+import com.tianji.message.domain.query.NoticeTaskPageQuery;
+import com.tianji.message.enums.TemplateStatus;
 import com.tianji.message.mapper.NoticeTaskMapper;
 import com.tianji.message.service.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -38,20 +37,15 @@ import java.util.concurrent.Executor;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class NoticeTaskServiceImpl extends ServiceImpl<NoticeTaskMapper, NoticeTask> implements INoticeTaskService {
 
-    @Resource
-    private Executor asyncNoticeExecutor;
-    @Autowired
-    private INoticeTemplateService noticeTemplateService;
-    @Autowired
-    private UserClient userClient;
-    @Autowired
-    private IPublicNoticeService publicNoticeService;
-    @Autowired
-    private IUserInboxService inboxService;
-    @Autowired
-    private ISmsService smsService;
+    private final Executor asyncNoticeExecutor;
+    private final INoticeTemplateService noticeTemplateService;
+    private final UserClient userClient;
+    private final IPublicNoticeService publicNoticeService;
+    private final IUserInboxService inboxService;
+    private final ISmsService smsService;
 
     @Override
     public Long saveNoticeTask(NoticeTaskFormDTO noticeTaskFormDTO) {

@@ -14,7 +14,7 @@ import com.tianji.auth.util.PrivilegeCache;
 import com.tianji.common.domain.query.PageQuery;
 import com.tianji.common.exceptions.CommonException;
 import com.tianji.common.utils.CollUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,18 +33,12 @@ import static com.tianji.auth.constants.AuthConstants.ADMIN_ROLE_ID;
  * @since 2022-06-15
  */
 @Service
+@RequiredArgsConstructor
 public class PrivilegeServiceImpl extends ServiceImpl<PrivilegeMapper, Privilege> implements IPrivilegeService {
 
     private final IRolePrivilegeService rolePrivilegeService;
     private final IRoleService roleService;
     private final PrivilegeCache privilegeCache;
-
-    @Autowired
-    public PrivilegeServiceImpl(IRolePrivilegeService rolePrivilegeService, IRoleService roleService, PrivilegeCache privilegeCache) {
-        this.rolePrivilegeService = rolePrivilegeService;
-        this.roleService = roleService;
-        this.privilegeCache = privilegeCache;
-    }
 
     @Override
     public Page<Privilege> listPrivilegesByPage(PageQuery pageQuery) {

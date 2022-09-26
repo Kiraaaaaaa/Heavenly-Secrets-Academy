@@ -12,7 +12,7 @@ import com.tianji.common.domain.query.PageQuery;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,14 +32,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/privileges")
 @Api(tags = "权限管理接口")
+@RequiredArgsConstructor
 public class PrivilegeController {
 
     private final IPrivilegeService privilegesService;
-
-    @Autowired
-    public PrivilegeController(IPrivilegeService privilegesService) {
-        this.privilegesService = privilegesService;
-    }
 
     /**
      * 分页查询所有权限

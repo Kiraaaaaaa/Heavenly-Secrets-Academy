@@ -1,15 +1,15 @@
 package com.tianji.message.controller;
 
 
+import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.message.domain.dto.NoticeTemplateDTO;
 import com.tianji.message.domain.dto.NoticeTemplateFormDTO;
 import com.tianji.message.domain.query.NoticeTemplatePageQuery;
-import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.message.service.INoticeTemplateService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/notice-templates")
 @Api(tags = "通知模板管理接口")
+@RequiredArgsConstructor
 public class NoticeTemplateController {
 
-    @Autowired
-    private INoticeTemplateService noticeTemplateService;
+    private final INoticeTemplateService noticeTemplateService;
 
     @PostMapping
     @ApiOperation("新增通知模板")

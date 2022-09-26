@@ -1,16 +1,16 @@
 package com.tianji.media.task;
 
-import com.tianji.media.domain.po.Media;
-import com.tianji.media.enums.FileStatus;
-import com.tianji.media.service.IMediaService;
 import com.tencentcloudapi.common.exception.TencentCloudSDKException;
 import com.tencentcloudapi.vod.v20180717.VodClient;
 import com.tencentcloudapi.vod.v20180717.models.*;
+import com.tianji.media.domain.po.Media;
+import com.tianji.media.enums.FileStatus;
+import com.tianji.media.service.IMediaService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,16 +18,15 @@ import java.util.Optional;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PullEventTask {
 
     private static final String PROCEDURE_EVENT = "ProcedureStateChanged";
     private static final String UPLOAD_EVENT = "NewFileUpload";
     private static final String PROCEDURE_EVENT_FINISH = "FINISH";
 
-    @Resource
-    private VodClient vodClient;
-    @Resource
-    private IMediaService mediaService;
+    private final VodClient vodClient;
+    private final IMediaService mediaService;
 
     @Scheduled(fixedDelay = 10000)
     public void pullEvent() {

@@ -13,8 +13,8 @@ import com.tianji.media.enums.FileStatus;
 import com.tianji.media.mapper.FileMapper;
 import com.tianji.media.service.IFileService;
 import com.tianji.media.storage.IFileStorage;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,12 +31,11 @@ import java.io.InputStream;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IFileService {
 
-    @Autowired
-    private IFileStorage fileStorage;
-    @Autowired
-    private PlatformProperties properties;
+    private final IFileStorage fileStorage;
+    private final PlatformProperties properties;
 
     @Override
     public FileDTO uploadFile(MultipartFile file) {

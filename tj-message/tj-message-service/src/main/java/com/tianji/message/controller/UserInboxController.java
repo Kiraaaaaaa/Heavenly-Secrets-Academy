@@ -1,14 +1,14 @@
 package com.tianji.message.controller;
 
 
+import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.message.domain.dto.UserInboxDTO;
 import com.tianji.message.domain.dto.UserInboxFormDTO;
 import com.tianji.message.domain.query.UserInboxQuery;
-import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.message.service.IUserInboxService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -22,10 +22,10 @@ import org.springframework.web.bind.annotation.*;
 @Api(tags = "用户收件箱接口")
 @RestController
 @RequestMapping("/inboxes")
+@RequiredArgsConstructor
 public class UserInboxController {
 
-    @Autowired
-    private IUserInboxService inboxService;
+    private final IUserInboxService inboxService;
 
     @PostMapping
     @ApiOperation("发送私信")

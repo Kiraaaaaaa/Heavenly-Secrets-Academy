@@ -3,22 +3,22 @@ package com.tianji.message.service.impl;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.tianji.message.domain.dto.UserInboxDTO;
-import com.tianji.message.domain.dto.UserInboxFormDTO;
 import com.tianji.api.dto.user.UserDTO;
-import com.tianji.message.enums.NoticeType;
-import com.tianji.message.domain.query.UserInboxQuery;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.UserContext;
 import com.tianji.message.config.MessageProperties;
+import com.tianji.message.domain.dto.UserInboxDTO;
+import com.tianji.message.domain.dto.UserInboxFormDTO;
 import com.tianji.message.domain.po.NoticeTemplate;
 import com.tianji.message.domain.po.PublicNotice;
 import com.tianji.message.domain.po.UserInbox;
+import com.tianji.message.domain.query.UserInboxQuery;
+import com.tianji.message.enums.NoticeType;
 import com.tianji.message.mapper.UserInboxMapper;
 import com.tianji.message.service.IPublicNoticeService;
 import com.tianji.message.service.IUserInboxService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +35,11 @@ import java.util.List;
  * @since 2022-08-19
  */
 @Service
+@RequiredArgsConstructor
 public class UserInboxServiceImpl extends ServiceImpl<UserInboxMapper, UserInbox> implements IUserInboxService {
 
-    @Autowired
-    private MessageProperties properties;
-    @Autowired
-    private IPublicNoticeService publicNoticeService;
+    private final MessageProperties properties;
+    private final IPublicNoticeService publicNoticeService;
 
     @Override
     public void saveNoticeToInbox(NoticeTemplate notice, List<UserDTO> users) {

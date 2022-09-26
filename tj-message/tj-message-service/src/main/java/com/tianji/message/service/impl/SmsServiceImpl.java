@@ -14,8 +14,8 @@ import com.tianji.message.service.INoticeTemplateService;
 import com.tianji.message.service.ISmsService;
 import com.tianji.message.service.ISmsThirdPlatformService;
 import com.tianji.message.thirdparty.ISmsHandler;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -28,18 +28,15 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SmsServiceImpl implements ISmsService {
 
     @Resource
-    private Executor asyncSmsExecutor;
-    @Resource
     private Map<String, ISmsHandler> smsHandlers;
-    @Autowired
-    private ISmsThirdPlatformService platformService;
-    @Autowired
-    private INoticeTemplateService noticeTemplateService;
-    @Autowired
-    private IMessageTemplateService messageTemplateService;
+    private final Executor asyncSmsExecutor;
+    private final ISmsThirdPlatformService platformService;
+    private final INoticeTemplateService noticeTemplateService;
+    private final IMessageTemplateService messageTemplateService;
 
     @Override
     public void sendMessageByTemplate(NoticeTemplate noticeTemplate, List<UserDTO> users) {

@@ -6,7 +6,7 @@ import com.tianji.media.service.IFileService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,14 +21,10 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/files")
 @Api(tags = "媒资管理相关接口")
+@RequiredArgsConstructor
 public class FileController {
 
     private final IFileService fileService;
-
-    @Autowired
-    public FileController(IFileService fileService) {
-        this.fileService = fileService;
-    }
 
     @ApiOperation("上传文件")
     @PostMapping

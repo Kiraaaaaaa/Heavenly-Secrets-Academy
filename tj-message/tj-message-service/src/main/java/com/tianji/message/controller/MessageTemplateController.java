@@ -1,15 +1,15 @@
 package com.tianji.message.controller;
 
 
+import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.message.domain.dto.MessageTemplateDTO;
 import com.tianji.message.domain.dto.MessageTemplateFormDTO;
 import com.tianji.message.domain.query.MessageTemplatePageQuery;
-import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.message.service.IMessageTemplateService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.*;
 @Api(tags = "短信模板管理接口")
 @RestController
 @RequestMapping("/message-templates")
+@RequiredArgsConstructor
 public class MessageTemplateController {
-    
-    @Autowired
-    private IMessageTemplateService messageTemplateService;
+
+    private final IMessageTemplateService messageTemplateService;
 
     @PostMapping
     @ApiOperation("新增短信模板")

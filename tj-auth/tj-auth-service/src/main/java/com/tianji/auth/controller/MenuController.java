@@ -9,7 +9,7 @@ import com.tianji.auth.service.IMenuService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -29,14 +29,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/menus")
 @Api(tags = "菜单管理")
+@RequiredArgsConstructor
 public class MenuController {
 
     private final IMenuService menuService;
-
-    @Autowired
-    public MenuController(IMenuService menuService) {
-        this.menuService = menuService;
-    }
 
     /**
      * 根据父菜单id查询子菜单

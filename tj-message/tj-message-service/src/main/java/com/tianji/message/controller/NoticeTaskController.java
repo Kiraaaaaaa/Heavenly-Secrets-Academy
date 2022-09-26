@@ -9,7 +9,7 @@ import com.tianji.message.service.INoticeTaskService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.*;
 @Api(tags = "短信任务管理接口")
 @RestController
 @RequestMapping("/notice-tasks")
+@RequiredArgsConstructor
 public class NoticeTaskController {
 
-    @Autowired
-    private INoticeTaskService noticeTaskService;
+    private final INoticeTaskService noticeTaskService;
 
     @PostMapping
     @ApiOperation("新增通知任务")

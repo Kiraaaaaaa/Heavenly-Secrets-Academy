@@ -14,7 +14,7 @@ import com.tianji.auth.service.IRoleMenuService;
 import com.tianji.auth.service.IRoleService;
 import com.tianji.common.exceptions.CommonException;
 import com.tianji.common.utils.UserContext;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.tianji.auth.common.constants.AuthErrorInfo.Msg.*;
+import static com.tianji.auth.common.constants.AuthErrorInfo.Msg.MENU_NOT_FOUND;
+import static com.tianji.auth.common.constants.AuthErrorInfo.Msg.ROLE_NOT_FOUND;
 
 /**
  * <p>
@@ -34,18 +35,12 @@ import static com.tianji.auth.common.constants.AuthErrorInfo.Msg.*;
  * @since 2022-06-16
  */
 @Service
+@RequiredArgsConstructor
 public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IMenuService {
 
     private final IRoleMenuService roleMenuService;
     private final IRoleService roleService;
     private final IAccountRoleService accountRoleService;
-
-    @Autowired
-    public MenuServiceImpl(IRoleMenuService roleMenuService, IRoleService roleService, IAccountRoleService accountRoleService) {
-        this.roleMenuService = roleMenuService;
-        this.roleService = roleService;
-        this.accountRoleService = accountRoleService;
-    }
 
     @Override
     public List<Menu> listMenuByUser() {

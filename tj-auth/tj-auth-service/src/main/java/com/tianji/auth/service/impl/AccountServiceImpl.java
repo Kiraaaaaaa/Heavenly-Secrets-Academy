@@ -8,6 +8,7 @@ import com.tianji.auth.util.JwtTool;
 import com.tianji.common.domain.dto.LoginUserDTO;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.utils.UserContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -21,16 +22,11 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AccountServiceImpl implements IAccountService{
     private final JwtTool jwtTool;
     private final UserClient userClient;
     private final ILoginRecordService loginRecordService;
-
-    public AccountServiceImpl(JwtTool jwtTool, UserClient userClient, ILoginRecordService loginRecordService) {
-        this.jwtTool = jwtTool;
-        this.userClient = userClient;
-        this.loginRecordService = loginRecordService;
-    }
 
     @Override
     public String login(LoginFormDTO loginDTO, boolean isStaff) {

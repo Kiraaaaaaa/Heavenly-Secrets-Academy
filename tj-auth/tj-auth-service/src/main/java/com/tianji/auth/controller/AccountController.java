@@ -5,7 +5,7 @@ import com.tianji.api.dto.user.LoginFormDTO;
 import com.tianji.auth.service.IAccountService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -14,14 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/accounts")
 @Api(tags = "账户管理")
+@RequiredArgsConstructor
 public class AccountController {
 
     private final IAccountService accountService;
-
-    @Autowired
-    public AccountController(IAccountService accountService) {
-        this.accountService = accountService;
-    }
 
     @ApiOperation("登录并获取token")
     @PostMapping(value = "/login")

@@ -1,12 +1,12 @@
 package com.tianji.message.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.message.config.MessageProperties;
 import com.tianji.message.domain.po.NoticeTemplate;
 import com.tianji.message.domain.po.PublicNotice;
 import com.tianji.message.mapper.PublicNoticeMapper;
 import com.tianji.message.service.IPublicNoticeService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,9 +20,10 @@ import java.time.LocalDateTime;
  * @since 2022-08-19
  */
 @Service
+@RequiredArgsConstructor
 public class PublicNoticeServiceImpl extends ServiceImpl<PublicNoticeMapper, PublicNotice> implements IPublicNoticeService {
-    @Autowired
-    private MessageProperties messageProperties;
+
+    private final MessageProperties messageProperties;
     @Override
     public void saveNoticeOfTemplate(NoticeTemplate noticeTemplate) {
         LocalDateTime now = LocalDateTime.now();

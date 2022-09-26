@@ -11,7 +11,7 @@ import com.tianji.media.service.IMediaService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,14 +27,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/medias")
 @Api(tags = "媒资管理相关接口")
+@RequiredArgsConstructor
 public class MediaController {
 
     private final IMediaService mediaService;
-
-    @Autowired
-    public MediaController(IMediaService mediaService) {
-        this.mediaService = mediaService;
-    }
 
     @ApiOperation("分页搜索已上传媒资信息")
     @GetMapping

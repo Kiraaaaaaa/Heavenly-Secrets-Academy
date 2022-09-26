@@ -8,6 +8,7 @@ import com.tianji.auth.service.IRoleService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -22,14 +23,11 @@ import java.util.stream.Collectors;
 @Api(tags = "角色管理")
 @RestController
 @RequestMapping("/roles")
+@RequiredArgsConstructor
 public class RoleController {
 
     private final IRoleService roleService;
 
-    public RoleController(IRoleService roleService) {
-
-        this.roleService = roleService;
-    }
     @ApiOperation("查询员工角色列表")
     @GetMapping("/list")
     public List<RoleDTO> listAllRoles(){

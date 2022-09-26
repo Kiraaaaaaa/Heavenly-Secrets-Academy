@@ -9,7 +9,7 @@ import com.tianji.message.service.ISmsThirdPlatformService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.*;
 @Api(tags = "短信平台管理接口")
 @RestController
 @RequestMapping("/sms-platforms")
+@RequiredArgsConstructor
 public class SmsThirdPlatformController {
 
-    @Autowired
-    private ISmsThirdPlatformService smsThirdPlatformService;
+    private final ISmsThirdPlatformService smsThirdPlatformService;
 
     @PostMapping
     @ApiOperation("新增短信平台信息")
