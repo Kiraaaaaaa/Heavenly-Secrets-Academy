@@ -47,6 +47,7 @@ echo "begin to create container ${CONTAINER_NAME}，port: ${PORT} ！！"
 docker run -d --name ${CONTAINER_NAME} \
  -p "${PORT}:${PORT}" \
  --memory 256m --memory-swap -1 \
+ --restart=always \
  --network heima-net ${IMAGE_NAME} \
 || exit 1
 echo "container is running now !! ^_^"
