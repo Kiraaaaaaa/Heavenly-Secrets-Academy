@@ -16,7 +16,7 @@ public class JwtConstants {
 
     public static final String JWT_ALGORITHM = "rs256";
     public static final String AUTHORIZATION_HEADER = "authorization";
-    public static final String REFRESH_HEADER = "refresh-token";
+    public static final String REFRESH_HEADER = "refresh";
 
     public static final String USER_HEADER = "user-info";
 

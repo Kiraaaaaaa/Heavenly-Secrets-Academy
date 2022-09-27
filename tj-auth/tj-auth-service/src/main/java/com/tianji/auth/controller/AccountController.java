@@ -36,7 +36,7 @@ public class AccountController {
     }
 
     @ApiOperation("刷新token")
-    @PostMapping(value = "/refresh")
+    @GetMapping(value = "/refresh")
     public String refreshToken(@CookieValue(JwtConstants.REFRESH_HEADER) String token){
         return accountService.refreshToken(URLDecoder.decode(token, StandardCharsets.UTF_8));
     }

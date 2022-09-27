@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -21,9 +22,11 @@ public class CookieBuilder {
     private String name;
     private String value;
     private String domain;
+    private final HttpServletRequest request;
     private final HttpServletResponse response;
 
-    public CookieBuilder(HttpServletResponse response) {
+    public CookieBuilder(HttpServletRequest request, HttpServletResponse response) {
+        this.request = request;
         this.response = response;
     }
 
@@ -35,6 +38,12 @@ public class CookieBuilder {
         Cookie cookie = new Cookie(name, URLEncoder.encode(value, charset));
         if(StringUtils.isNotBlank(domain)) {
             cookie.setDomain(domain);
+        }else if (request != null) {
+            String serverName = request.getServerName();
+            if(serverName.startsWith("www\\.")){
+                serverName = serverName.substring(4);
+            }
+            cookie.setDomain(serverName);
         }
         cookie.setHttpOnly(httpOnly);
         cookie.setMaxAge(maxAge);

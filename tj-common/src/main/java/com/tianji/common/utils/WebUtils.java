@@ -159,6 +159,6 @@ public class WebUtils {
     }
 
     public static CookieBuilder cookieBuilder(){
-        return new CookieBuilder(getResponse());
+        return new CookieBuilder(getRequest(), getResponse());
     }
 }
