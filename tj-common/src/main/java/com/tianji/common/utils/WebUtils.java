@@ -157,4 +157,8 @@ public class WebUtils {
         }
         return request.getRemoteAddr();
     }
+
+    public static CookieBuilder cookieBuilder(){
+        return new CookieBuilder(getResponse());
+    }
 }
