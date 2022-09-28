@@ -1,6 +1,7 @@
 package com.tianji.gateway.filter;
 
 import cn.hutool.core.lang.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -12,6 +13,7 @@ import reactor.core.publisher.Mono;
 import static com.tianji.common.constants.Constant.*;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.PRESERVE_HOST_HEADER_ATTRIBUTE;
 
+@Slf4j
 @Component
 public class RequestIdRelayFilter implements GlobalFilter, Ordered {
     @Override
@@ -32,7 +34,9 @@ public class RequestIdRelayFilter implements GlobalFilter, Ordered {
                 }
         ).build();
         // 4.允许携带host头
+        log.debug("请求头属性：{}", exchange.getAttributes().get(PRESERVE_HOST_HEADER_ATTRIBUTE));
         exchange.getAttributes().put(PRESERVE_HOST_HEADER_ATTRIBUTE, true);
+        log.debug("修改后请求头属性：{}", exchange.getAttributes().get(PRESERVE_HOST_HEADER_ATTRIBUTE));
         return chain.filter(exchange);
     }
 
