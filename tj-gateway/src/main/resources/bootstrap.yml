@@ -68,6 +68,7 @@ spring:
             - Path=/es/**
       default-filters:
         - StripPrefix=1
+        - PreserveHostHeader
       globalcors: # 全局的跨域处理
         add-to-simple-url-handler-mapping: true # 解决options请求被拦截问题
         corsConfigurations:
