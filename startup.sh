@@ -33,6 +33,11 @@ while getopts "c:n:d:p:o:a:" opt; do
           ;;
     esac
 done
+if [ "$DEBUG_PORT" = "0" ]; then
+  JAVA_OPTS=$JAVA_OPTS
+else
+  JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+fi
 IMAGE_NAME="${CONTAINER_NAME}:latest"
 echo "copy xx.jar from ${BASE_PATH}/${PROJECT_PATH}"
 rm -f app.jar
@@ -48,19 +53,19 @@ echo "${PROJECT_NAME} image build success，java_opts = $JAVA_OPTS ！！^_^"
 
 echo "begin to create container ${CONTAINER_NAME}，port: ${PORT} ！！"
 
-if [ -n "$DEBUG_PORT" ]; then
-  echo "run in debug mode"
+if [ "$DEBUG_PORT" = "0" ]; then
+  echo "run in normal mode"
   docker run -d --name ${CONTAINER_NAME} \
    -p "${PORT}:${PORT}" \
-   -p ${DEBUG_PORT}:5005 \
    --memory 256m --memory-swap -1 \
    --restart=always \
    --network heima-net ${IMAGE_NAME} \
   || exit 1
 else
-  echo "run in normal mode"
+  echo "run in debug mode"
   docker run -d --name ${CONTAINER_NAME} \
    -p "${PORT}:${PORT}" \
+   -p ${DEBUG_PORT}:5005 \
    --memory 256m --memory-swap -1 \
    --restart=always \
    --network heima-net ${IMAGE_NAME} \
