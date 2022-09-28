@@ -1,6 +1,6 @@
 FROM openjdk:11.0-jre-buster
 LABEL maintainer="研究院研发组 <research-maint@itcast.cn>"
-ARG JAVA_OPTS
+ENV JAVA_OPTS=""
 # 设定时区
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

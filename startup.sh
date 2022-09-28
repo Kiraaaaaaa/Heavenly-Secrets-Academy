@@ -48,7 +48,7 @@ echo "begin to build ${PROJECT_NAME} image ！！"
 [ -n "`docker ps -a | grep ${CONTAINER_NAME}`" ] && docker rm -f ${CONTAINER_NAME}
 [ -n "`docker images | grep ${CONTAINER_NAME}`" ] && docker rmi ${IMAGE_NAME}
 
-docker build --build-arg JAVA_OPTS="$JAVA_OPTS" -t ${IMAGE_NAME} . || exit 1
+docker build -t ${IMAGE_NAME} . || exit 1
 echo "${PROJECT_NAME} image build success，java_opts = $JAVA_OPTS ！！^_^"
 
 echo "begin to create container ${CONTAINER_NAME}，port: ${PORT} ！！"
@@ -57,6 +57,7 @@ if [ "$DEBUG_PORT" = "0" ]; then
   echo "run in normal mode"
   docker run -d --name ${CONTAINER_NAME} \
    -p "${PORT}:${PORT}" \
+   -e JAVA_OPTS="${JAVA_OPTS}" \
    --memory 256m --memory-swap -1 \
    --restart=always \
    --network heima-net ${IMAGE_NAME} \
@@ -66,6 +67,7 @@ else
   docker run -d --name ${CONTAINER_NAME} \
    -p "${PORT}:${PORT}" \
    -p ${DEBUG_PORT}:5005 \
+   -e JAVA_OPTS="${JAVA_OPTS}" \
    --restart=always \
    --network heima-net ${IMAGE_NAME} \
   || exit 1
