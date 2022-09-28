@@ -1,6 +1,6 @@
 #! /bin/sh
 cd /usr/local/src/script || exit 1
-BASE_PATH='/usr/local/src/jenkins/workspace/tjxt-dev'
+BASE_PATH='/usr/local/src/jenkins/workspace/tjxt-dev-build'
 PROJECT_NAME=""
 PROJECT_PATH=''
 CONTAINER_NAME=""
