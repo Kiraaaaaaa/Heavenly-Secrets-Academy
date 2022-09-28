@@ -36,7 +36,7 @@ done
 if [ "$DEBUG_PORT" = "0" ]; then
   JAVA_OPTS=$JAVA_OPTS
 else
-  JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+  JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
 fi
 IMAGE_NAME="${CONTAINER_NAME}:latest"
 echo "copy xx.jar from ${BASE_PATH}/${PROJECT_PATH}"
@@ -66,7 +66,6 @@ else
   docker run -d --name ${CONTAINER_NAME} \
    -p "${PORT}:${PORT}" \
    -p ${DEBUG_PORT}:5005 \
-   --memory 256m --memory-swap -1 \
    --restart=always \
    --network heima-net ${IMAGE_NAME} \
   || exit 1

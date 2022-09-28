@@ -10,6 +10,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import static com.tianji.common.constants.Constant.*;
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.PRESERVE_HOST_HEADER_ATTRIBUTE;
 
 @Component
 public class RequestIdRelayFilter implements GlobalFilter, Ordered {
@@ -30,7 +31,8 @@ public class RequestIdRelayFilter implements GlobalFilter, Ordered {
                     }
                 }
         ).build();
-
+        // 4.允许携带host头
+        exchange.getAttributes().put(PRESERVE_HOST_HEADER_ATTRIBUTE, true);
         return chain.filter(exchange);
     }
 
