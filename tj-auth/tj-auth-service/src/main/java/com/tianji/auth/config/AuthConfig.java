@@ -1,7 +1,9 @@
 package com.tianji.auth.config;
 
+import org.apache.tomcat.util.http.LegacyCookieProcessor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.cloud.bootstrap.encrypt.KeyProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,5 +32,10 @@ public class AuthConfig {
         return keyStoreKeyFactory.getKeyPair(
                 keyProperties.getKeyStore().getAlias(),
                 keyProperties.getKeyStore().getSecret().toCharArray());
+    }
+
+    @Bean
+    public TomcatContextCustomizer cookieTomcatContextCustomizer(){
+        return context -> context.setCookieProcessor(new LegacyCookieProcessor());
     }
 }
