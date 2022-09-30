@@ -486,8 +486,8 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
             //课程所属分类
             String categories = StringUtils.format("{}/{}/{}",
                     categoryNameMap.get(course.getFirstCateId()),
-                    categoryNameMap.get(course.getFirstCateId()),
-                    categoryNameMap.get(course.getFirstCateId()));
+                    categoryNameMap.get(course.getSecondCateId()),
+                    categoryNameMap.get(course.getThirdCateId()));
             coursePageVO.setCategories(categories);
             //更新人
             coursePageVO.setUpdaterName(updaterMap.get(course.getUpdater()));

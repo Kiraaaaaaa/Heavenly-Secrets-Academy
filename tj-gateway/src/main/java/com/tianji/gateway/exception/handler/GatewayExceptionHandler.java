@@ -3,6 +3,7 @@ package com.tianji.gateway.exception.handler;
 import com.tianji.common.constants.Constant;
 import com.tianji.common.domain.R;
 import com.tianji.common.exceptions.CommonException;
+import com.tianji.common.exceptions.UnauthorizedException;
 import com.tianji.common.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
@@ -28,7 +29,7 @@ import static com.tianji.common.constants.ErrorInfo.Msg.SERVER_INTER_ERROR;
 public class GatewayExceptionHandler implements ErrorWebExceptionHandler, Ordered {
 
     @Override
-    public Mono<Void> handle(ServerWebExchange exchange, Throwable ex){
+    public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
         // 1.获取响应
         ServerHttpResponse response = exchange.getResponse();
         // 2.判断是否已处理
@@ -40,15 +41,19 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler, Ordere
         // 3.按照异常类型进行翻译处理，翻译的结果易于前端理解
         String message;
         int code = FAILED;
-        if (ex instanceof CommonException) {
+        if (ex instanceof UnauthorizedException) {
+            // 登录异常，直接返回状态码
+            UnauthorizedException e = (UnauthorizedException) ex;
+            return Mono.error(new ResponseStatusException(e.getStatus(), e.getMessage(), e));
+        } else if (ex instanceof CommonException) {
             CommonException e = (CommonException) ex;
             code = e.getCode();
             message = e.getMessage();
-        }else if(ex instanceof NotFoundException) {
+        } else if (ex instanceof NotFoundException) {
             message = "服务不存在";
-        }else if(ex instanceof ResponseStatusException) {
+        } else if (ex instanceof ResponseStatusException) {
             message = ex.getMessage();
-        }else {
+        } else {
             message = SERVER_INTER_ERROR;
             // 4.记录日志
             writeLog(exchange, ex);
