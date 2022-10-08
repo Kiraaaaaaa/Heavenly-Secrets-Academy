@@ -12,7 +12,6 @@ import com.tianji.search.constants.SearchErrorInfo;
 import com.tianji.search.domain.po.Course;
 import com.tianji.search.domain.query.CoursePageQuery;
 import com.tianji.search.domain.vo.CourseVO;
-import com.tianji.search.enums.CourseStatus;
 import com.tianji.search.repository.CourseRepository;
 import com.tianji.search.service.IInterestsService;
 import com.tianji.search.service.ISearchService;
@@ -166,24 +165,22 @@ public class SearchServiceImpl implements ISearchService {
 
     @Override
     public PageDTO<CourseVO> queryCoursesForPortal(CoursePageQuery query) {
-        // 1.只查询上架课程
-        query.setStatus(CourseStatus.ON_THE_MARKET.getValue());
-        // 2.搜索数据
+        // 1.搜索数据
         SearchResponse response = searchForResponse(query, CourseVO.EXCLUDE_FIELDS);
-        // 3.解析响应
+        // 2.解析响应
         PageDTO<Course> result = handleSearchResponse(response, query.getPageSize());
-        // 4.处理VO
+        // 3.处理VO
         List<Course> list = result.getList();
         if (CollUtils.isEmpty(list)) {
             return PageDTO.empty(result.getTotal(), result.getPages());
         }
-        // 4.1.查询教师信息
+        // 3.1.查询教师信息
         List<Long> teacherIds = list.stream().map(Course::getTeacher).collect(Collectors.toList());
         List<UserDTO> teachers = userClient.queryUserByIds(teacherIds);
         AssertUtils.isNotEmpty(teachers, SearchErrorInfo.TEACHER_NOT_EXISTS);
         Map<Long, String> teacherMap = teachers.stream()
                 .collect(Collectors.toMap(UserDTO::getId, UserDTO::getName));
-        // 4.2.转换VO
+        // 3.2.转换VO
         List<CourseVO> vos = new ArrayList<>(list.size());
         for (Course c : list) {
             CourseVO vo = BeanUtils.toBean(c, CourseVO.class);
@@ -272,9 +269,6 @@ public class SearchServiceImpl implements ISearchService {
         }
         if (query.getFree() != null) {
             queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.FREE, query.getFree()));
-        }
-        if (query.getStatus() != null) {
-            queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.STATUS, query.getStatus()));
         }
         if (query.getType() != null) {
             queryBuilder.filter(QueryBuilders.termQuery(CourseRepository.TYPE, query.getType()));

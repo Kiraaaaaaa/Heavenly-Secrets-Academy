@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.course.CourseClient;
-import com.tianji.api.client.order.TradeClient;
+import com.tianji.api.client.trade.TradeClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.course.MediaQuoteDTO;
 import com.tianji.api.dto.course.SectionInfoDTO;

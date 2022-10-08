@@ -1,4 +1,4 @@
-package com.tianji.api.client.order;
+package com.tianji.api.client.trade;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

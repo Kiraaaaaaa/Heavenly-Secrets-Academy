@@ -3,7 +3,7 @@ spring:
     nacos:
       server-addr: 192.168.150.101:8848 # nacos注册中心
       discovery:
-        namespace: c975b6f4-de7e-40ad-9b15-4a245ce7a2ef
+        namespace: f923fb34-cb0a-4c06-8fca-ad61ea61a3f0
         group: DEFAULT_GROUP
         ip: 192.168.150.101
 logging:

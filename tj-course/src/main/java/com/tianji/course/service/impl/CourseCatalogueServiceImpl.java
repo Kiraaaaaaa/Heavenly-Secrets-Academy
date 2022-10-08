@@ -1,6 +1,7 @@
 package com.tianji.course.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.dto.course.CatalogueDTO;
 import com.tianji.api.dto.course.MediaQuoteDTO;
@@ -18,10 +19,7 @@ import com.tianji.course.service.ICourseCatalogueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -113,34 +111,39 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
 
     @Override
     public List<CataSimpleInfoVO> getCatasIndexList(Long courseId) {
-
-        //获取目录,练习不查询
-        LambdaQueryWrapper<CourseCatalogue> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(CourseCatalogue::getCourseId, courseId)
-                .in(CourseCatalogue::getType, Arrays.asList(
-                        CourseConstants.CataType.CHAPTER,
-                        CourseConstants.CataType.SECTION
-                ));
+        //1.课程目录（不含练习）查询条件
+        LambdaQueryWrapper<CourseCatalogue> queryWrapper =
+                Wrappers.lambdaQuery(CourseCatalogue.class)
+                        .eq(CourseCatalogue::getCourseId, courseId)
+                        .in(CourseCatalogue::getType, Arrays.asList(
+                                CourseConstants.CataType.CHAPTER,
+                                CourseConstants.CataType.SECTION
+                        ));
+        //1.1查询课程目录
         List<CourseCatalogue> courseCatalogues = baseMapper.selectList(queryWrapper);
-        if(CollUtils.isEmpty(courseCatalogues)){
+        if (CollUtils.isEmpty(courseCatalogues)) {
             return new ArrayList<>();
         }
-        //章id与章序号映射关系
-        Map<Long, Integer> chapterMap = courseCatalogues.stream().filter(
-                courseCatalogue -> courseCatalogue.getType() == CourseConstants.CataType.CHAPTER)
-                .collect(Collectors.toMap(CourseCatalogue::getId, CourseCatalogue::getCIndex));
-        //课程
-        List<CataSimpleInfoVO> simpleInfoVOS = new ArrayList<>();
-        courseCatalogues.stream().filter(
-                courseCatalogue -> courseCatalogue.getType() != CourseConstants.CataType.CHAPTER)
-                .forEach(courseCatalogue -> {
-                    //序号 例如1-1
+        //2.章id与章序号映射关系
+        Map<Long, Integer> chapterMap =
+                courseCatalogues
+                        .stream()
+                        .filter(courseCatalogue -> courseCatalogue.getType() == CourseConstants.CataType.CHAPTER)
+                        .collect(Collectors.toMap(CourseCatalogue::getId, CourseCatalogue::getCIndex));
+        //3.遍历课程目录，组装数据
+        return courseCatalogues.stream()
+                .filter(courseCatalogue -> courseCatalogue.getType() != CourseConstants.CataType.CHAPTER)
+
+                .map(courseCatalogue -> {
+                    //3.1组装目录序号
                     String index = StringUtils.format("{}-{}",
-                            chapterMap.get(courseCatalogue.getParentCatalogueId()),courseCatalogue.getCIndex());
-                    simpleInfoVOS.add(new CataSimpleInfoVO(courseCatalogue.getId(),
-                            courseCatalogue.getName(), index, courseCatalogue.getCIndex()));
-                });
-        return simpleInfoVOS;
+                            chapterMap.get(courseCatalogue.getParentCatalogueId()),
+                            courseCatalogue.getCIndex());
+                    //3.2组装目录信息，目录id，目录名称，目录序号
+                    return new CataSimpleInfoVO(courseCatalogue.getId(),
+                            courseCatalogue.getName(), index, courseCatalogue.getCIndex());
+                })
+                .collect(Collectors.toList());
     }
 
     @Override

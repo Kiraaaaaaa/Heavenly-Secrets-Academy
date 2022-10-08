@@ -83,9 +83,10 @@ public class CommonExceptionAdvice {
     }
 
     private Object processResponse(int status, int code, String msg){
-        // 1.禁止网关处理响应
+        // 1.标记响应异常已处理（避免重复处理）
         WebUtils.setResponseHeader(Constant.BODY_PROCESSED_MARK_HEADER, "true");
-        // 2.返回
+        // 2.如果是网关请求，http状态码修改为200返回，前端基于业务状态码code来判断状态
+        // 如果是微服务请求，http状态码基于异常原样返回，微服务自己做fallback处理
         return WebUtils.isGatewayRequest() ?
                 R.error(code, msg).requestId(MDC.get(Constant.REQUEST_ID_HEADER))
                 : ResponseEntity.status(status).body(msg);

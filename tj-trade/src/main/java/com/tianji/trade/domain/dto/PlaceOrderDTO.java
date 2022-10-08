@@ -19,4 +19,8 @@ public class PlaceOrderDTO {
 
     @ApiModelProperty("该订单使用的优惠券id列表，可以为空")
     private List<Long> couponIds;
+
+    @ApiModelProperty("订单id")
+    @NotNull(message = "订单id不能为空")
+    private Long orderId;
 }

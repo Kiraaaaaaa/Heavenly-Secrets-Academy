@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.exam.ExamClient;
-import com.tianji.api.client.order.TradeClient;
+import com.tianji.api.client.trade.TradeClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.CourseSearchDTO;
@@ -196,7 +196,7 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
             if (course != null) {
                 courseBaseInfoVO = BeanUtils.toBean(course, CourseBaseInfoVO.class);
                 CourseContent courseContent = courseContentMapper.selectById(id);
-                courseBaseInfoVO.setCoureScore(NumberUtils.div(Math.random() * 1 + 4, 1,2)); //todo 评分默认
+                courseBaseInfoVO.setScore(NumberUtils.div(Math.random() * 1 + 4, 1,1)); //todo 评分默认
                 courseBaseInfoVO.setEnrollNum(10); //todo 做完订单再做报名人数
                 courseBaseInfoVO.setStudyNum(10); //todo 做完订单再做学习人数
                 courseBaseInfoVO.setRefundNum(10); //做完退款再做退款人数

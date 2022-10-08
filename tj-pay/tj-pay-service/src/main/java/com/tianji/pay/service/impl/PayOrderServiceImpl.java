@@ -105,7 +105,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
         // 2.初始化数据
         payOrder.setNotifyTimes(0);
         payOrder.setNotifyStatus(NotifyStatus.UN_CALL.getValue());
-        payOrder.setPayOverTime(LocalDateTime.now().minusMinutes(120L));
+        payOrder.setPayOverTime(LocalDateTime.now().plusMinutes(120L));
         payOrder.setStatus(PayStatus.NOT_COMMIT.getValue());
         return payOrder;
     }

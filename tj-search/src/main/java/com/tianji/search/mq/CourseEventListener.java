@@ -19,7 +19,7 @@ public class CourseEventListener {
     private ICourseService courseService;
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "course.up.queue", durable = "true"),
+            value = @Queue(name = "search.course.up.queue", durable = "true"),
             exchange = @Exchange(name = COURSE_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = COURSE_UP_KEY
     ))
@@ -28,7 +28,7 @@ public class CourseEventListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "course.down.queue", durable = "true"),
+            value = @Queue(name = "search.course.down.queue", durable = "true"),
             exchange = @Exchange(name = COURSE_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = COURSE_DOWN_KEY
     ))
@@ -37,7 +37,7 @@ public class CourseEventListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "course.expire.queue", durable = "true"),
+            value = @Queue(name = "search.course.expire.queue", durable = "true"),
             exchange = @Exchange(name = COURSE_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = COURSE_EXPIRE_KEY
     ))

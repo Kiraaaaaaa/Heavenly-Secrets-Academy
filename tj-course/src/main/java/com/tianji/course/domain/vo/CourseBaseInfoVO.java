@@ -33,7 +33,7 @@ public class CourseBaseInfoVO {
     @ApiModelProperty("课时总数量,去掉章，测试，用于编辑回显时该值为空")
     private Integer cataTotalNum;
     @ApiModelProperty("课程评分，用于编辑回显时该值为空")
-    private Double coureScore = 0d;
+    private Double score = 0d;
     @ApiModelProperty("报名人数，用于编辑回显时该值为空")
     private Integer enrollNum = 0;
     @ApiModelProperty("学习人数，用于编辑回显时该值为空")

@@ -1,7 +1,7 @@
 package com.tianji.search.mq;
 
 import com.tianji.search.service.ICourseService;
-import com.tianji.api.dto.order.OrderBasicDTO;
+import com.tianji.api.dto.trade.OrderBasicDTO;
 import com.tianji.common.utils.CollUtils;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
@@ -22,7 +22,7 @@ public class OrderEventListener {
     private ICourseService courseService;
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "order.pay.queue", durable = "true"),
+            value = @Queue(name = "search.order.pay.queue", durable = "true"),
             exchange = @Exchange(name = ORDER_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = ORDER_PAY_KEY
     ))
@@ -34,7 +34,7 @@ public class OrderEventListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "order.refund.queue", durable = "true"),
+            value = @Queue(name = "search.order.refund.queue", durable = "true"),
             exchange = @Exchange(name = ORDER_EXCHANGE, type = ExchangeTypes.TOPIC),
             key = ORDER_REFUND_KEY
     ))

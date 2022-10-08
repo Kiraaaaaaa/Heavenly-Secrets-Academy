@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.exam.ExamClient;
-import com.tianji.api.client.order.TradeClient;
+import com.tianji.api.client.trade.TradeClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.*;

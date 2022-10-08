@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.course.CourseClient;
 import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.CourseSimpleInfoDTO;
-import com.tianji.api.dto.order.OrderBasicDTO;
+import com.tianji.api.dto.trade.OrderBasicDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.MqConstants;
 import com.tianji.common.domain.dto.PageDTO;
@@ -84,7 +84,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setStatus(OrderStatus.NO_PAY.getValue());
         order.setMessage(OrderStatus.NO_PAY.getProgressName());
         // 2.4.订单id
-        Long orderId = IdWorker.getId(order);
+        Long orderId = placeOrderDTO.getOrderId();
         order.setId(orderId);
 
         // 3.封装订单详情
@@ -167,7 +167,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         rabbitMqHelper.send(
                 MqConstants.Exchange.ORDER_EXCHANGE,
                 MqConstants.Key.ORDER_PAY_KEY,
-                OrderBasicDTO.builder().orderId(orderId).userId(userId).courseIds(cIds).build());
+                OrderBasicDTO.builder()
+                        .orderId(orderId)
+                        .userId(userId)
+                        .courseIds(cIds)
+                        .finishTime(order.getFinishTime())
+                        .build()
+        );
         // 6.返回vo
         return PlaceOrderResultVO.builder()
                 .orderId(orderId)
@@ -378,7 +384,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         rabbitMqHelper.send(
                 MqConstants.Exchange.ORDER_EXCHANGE,
                 MqConstants.Key.PAY_SUCCESS,
-                OrderBasicDTO.builder().orderId(o.getId()).userId(order.getUserId()).courseIds(cIds).build());
+                OrderBasicDTO.builder()
+                        .orderId(o.getId()).userId(order.getUserId()).courseIds(cIds)
+                        .finishTime(o.getPayTime())
+                        .build()
+        );
     }
 
 }

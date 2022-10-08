@@ -2,8 +2,6 @@ server:
   port: 8088  #端口
   tomcat:
     uri-encoding: UTF-8   #服务编码
-  error:
-    include-message: always #返回的响应体带上message
 spring:
   profiles:
     active: dev
@@ -38,4 +36,3 @@ tj:
       enable: true
       excludeLoginPaths:
         - "/order-details/enrollNum"
-        -
