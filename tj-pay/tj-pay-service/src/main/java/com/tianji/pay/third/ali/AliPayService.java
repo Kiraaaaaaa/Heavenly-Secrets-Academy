@@ -11,8 +11,11 @@ import com.tianji.common.exceptions.CommonException;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.DateUtils;
 import com.tianji.common.utils.StringUtils;
+import com.tianji.pay.sdk.constants.PayConstants;
+import com.tianji.pay.third.CommonPayProperties;
 import com.tianji.pay.third.IPayService;
 import com.tianji.pay.third.model.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -26,26 +29,33 @@ import static com.tianji.pay.sdk.constants.PayConstants.ALI_CHANNEL_CODE;
 
 @Slf4j
 @Service(ALI_CHANNEL_CODE)
+@RequiredArgsConstructor
 public class AliPayService implements IPayService {
+
+    private final CommonPayProperties commonPayProperties;
 
     @Override
     public PrepayResponse createPrepayOrder(String title, String orderNo, Integer amount) {
-        // 1. 发起API调用（以创建当面付收款二维码为例）
+        // 1.动态获取回调地址
+        String notifyUrl = commonPayProperties.getNotifyHost() + "/notify/" + PayConstants.ALI_CHANNEL_CODE;
+
+        // 2. 发起API调用（以创建当面付收款二维码为例）
         AlipayTradePrecreateResponse response = null;
         try {
             response = Factory.Payment.FaceToFace()
+                    .asyncNotify(notifyUrl)
                     .preCreate(title, orderNo, transferAmount2String(amount));
         } catch (Exception e) {
             log.error("支付宝预下单失败，订单id：{}", orderNo, e);
             throw new CommonException("支付宝预下单失败", e);
         }
-        // 2.处理响应
+        // 3.处理响应
         PrepayResponse.PrepayResponseBuilder builder = PrepayResponse.builder();
         if (ResponseChecker.success(response)) {
-            // 2.1.响应结果正常
+            // 3.1.响应结果正常
             builder.success(true).payUrl(response.getQrCode());
         } else {
-            // 2.2.响应结果异常
+            // 3.2.响应结果异常
             builder.success(false).code(response.getCode()).msg(response.getMsg());
         }
         return builder.build();

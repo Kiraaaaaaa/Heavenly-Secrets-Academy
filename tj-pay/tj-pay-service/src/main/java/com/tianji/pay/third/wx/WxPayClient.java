@@ -31,8 +31,7 @@ import java.util.Arrays;
 public class WxPayClient {
     private final CloseableHttpClient wxPayClient;
     private final ObjectMapper objectMapper;
-    private final String notifyUrl;
-    private final String refundNotifyUrl;
+    private final CommonPayProperties payProperties;
     private final String appId;
     private final String mchId;
 
@@ -43,8 +42,7 @@ public class WxPayClient {
         this.objectMapper = objectMapper;
         this.appId = properties.getAppId();
         this.mchId = properties.getMchId();
-        this.notifyUrl = commonPayProperties.getNotifyHost() + "/notify/" + PayConstants.WX_CHANNEL_CODE;
-        this.refundNotifyUrl = commonPayProperties.getNotifyHost() + "/notify/refund/" + PayConstants.WX_CHANNEL_CODE;
+        this.payProperties = commonPayProperties;
     }
 
     public String doPostJson(String requestPath, ObjectNode body) {
@@ -102,7 +100,9 @@ public class WxPayClient {
                 objectNode.put("mchid", mchId);
         }
         if(isRefund != null) {
-            objectNode.put("notify_url", isRefund ? refundNotifyUrl : notifyUrl);
+            String notifyPath = isRefund ? "/notify/" : "/notify/refund/";
+            objectNode.put("notify_url",
+                    payProperties.getNotifyHost() + notifyPath + PayConstants.WX_CHANNEL_CODE);
         }
         return objectNode;
     }
