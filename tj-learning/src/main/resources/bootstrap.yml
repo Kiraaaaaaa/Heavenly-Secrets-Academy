@@ -22,6 +22,8 @@ spring:
             refresh: false
           - data-id: shared-feign.yaml # 共享feign配置
             refresh: false
+          - data-id: shared-mq.yaml # 共享mq配置
+            refresh: false
 tj:
   swagger:
     enable: true
@@ -34,3 +36,6 @@ tj:
     version: v1.0
   jdbc:
     database: tj_learning
+  auth:
+    resource:
+      enable: true

@@ -4,10 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.exam.ExamClient;
+import com.tianji.api.client.learning.LearningClient;
 import com.tianji.api.client.trade.TradeClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.constants.CourseStatus;
+import com.tianji.api.dto.IdAndNumDTO;
 import com.tianji.api.dto.course.*;
+import com.tianji.api.dto.leanring.LearningLessonDTO;
+import com.tianji.api.dto.leanring.LearningRecordDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.ErrorInfo;
@@ -19,13 +23,12 @@ import com.tianji.common.exceptions.DbException;
 import com.tianji.common.utils.*;
 import com.tianji.course.constants.CourseErrorInfo;
 import com.tianji.course.domain.dto.CourseSimpleInfoListDTO;
-import com.tianji.api.dto.IdAndNumDTO;
-import com.tianji.course.domain.po.Category;
-import com.tianji.course.domain.po.Course;
-import com.tianji.course.domain.po.CourseDraft;
-import com.tianji.course.domain.po.CourseTeacher;
+import com.tianji.course.domain.po.*;
 import com.tianji.course.domain.query.CoursePageQuery;
+import com.tianji.course.domain.vo.ChapterVO;
+import com.tianji.course.domain.vo.CourseAndSectionVO;
 import com.tianji.course.domain.vo.CoursePageVO;
+import com.tianji.course.domain.vo.SectionVO;
 import com.tianji.course.mapper.CourseDraftMapper;
 import com.tianji.course.mapper.CourseMapper;
 import com.tianji.course.mapper.CourseTeacherMapper;
@@ -94,6 +97,9 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
 
     @Autowired
     private ExamClient examClient;
+
+    @Autowired
+    private LearningClient learningClient;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
@@ -294,11 +300,11 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         CourseFullInfoDTO courseFullInfoDTO = BeanUtils.toBean(course, CourseFullInfoDTO.class);
 
         // 3.查询目录信息
-        if(withCatalogue) {
+        if (withCatalogue) {
             courseFullInfoDTO.setChapters(courseCatalogueService.queryCourseCatalogues(id, true));
         }
         // 4.查询教师信息
-        if(withTeachers) {
+        if (withTeachers) {
             courseFullInfoDTO.setTeacherIds(courseTeacherService.getTeacherIdOfCourse(id));
         }
         return courseFullInfoDTO;
@@ -360,9 +366,82 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     public List<Course> queryByCategoryIdAndLevel(Long categoryId, Integer level) {
         LambdaQueryWrapper<Course> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(level == 1, Course::getFirstCateId, categoryId) //一级课程分类
-                .eq( level == 2, Course::getSecondCateId, categoryId) //二级课程分类
+                .eq(level == 2, Course::getSecondCateId, categoryId) //二级课程分类
                 .eq(level == 3, Course::getThirdCateId, categoryId); //三级课程分类
         return baseMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public CourseAndSectionVO queryCourseAndCatalogById(Long courseId) {
+        // 1.获取当前用户
+        Long userId = UserContext.getUser();
+        // 2.查询课程详情
+        CourseFullInfoDTO course = getInfoById(courseId, true, true);
+        if (course == null) {
+            return null;
+        }
+        // 3.组织VO
+        CourseAndSectionVO vo = new CourseAndSectionVO();
+        vo.setId(courseId);
+        vo.setName(course.getName());
+        vo.setSections(course.getSectionNum());
+        vo.setCoverUrl(course.getCoverUrl());
+        // 4.查询教师信息
+        List<UserDTO> teachers = userClient.queryUserByIds(course.getTeacherIds());
+        if (CollUtils.isNotEmpty(teachers)) {
+            UserDTO teacher = teachers.get(0);
+            vo.setTeacherName(teacher.getName());
+            vo.setTeacherIcon(teacher.getIcon());
+        }
+        // 5.组装小节信息
+        List<CatalogueDTO> catas = course.getChapters();
+        List<ChapterVO> chapters = new ArrayList<>(catas.size());
+        for (CatalogueDTO c : catas) {
+            ChapterVO cv = new ChapterVO();
+            cv.setId(c.getId());
+            cv.setName(c.getName());
+            cv.setIndex(c.getIndex());
+            cv.setMediaDuration(c.getMediaDuration());
+            List<SectionVO> sections = BeanUtils.copyToList(c.getSections(), SectionVO.class);
+            cv.setSections(sections);
+            chapters.add(cv);
+        }
+        vo.setChapters(chapters);
+        // 6.查询学习进度
+        if (learningClient == null) {
+            return vo;
+        }
+        // 6.1.查询学习记录
+        LearningLessonDTO lessonDTO = learningClient.queryLearningRecordByCourse(courseId);
+        if (lessonDTO == null) {
+            // 没有查询到课表信息，说明是免费试看，直接返回
+            return vo;
+        }
+        vo.setLessonId(lessonDTO.getId());
+        if (CollUtils.isEmpty(lessonDTO.getRecords())) {
+            // 有课表信息，但是没有学习记录，不用处理进度问题了，直接返回
+            return vo;
+        }
+        List<LearningRecordDTO> records = lessonDTO.getRecords();
+        // 6.2.获取最近学习的记录。由于查询时按照学习时间排序，第一条记录就是最近学习的小节记录
+        Long latestSectionId = lessonDTO.getLatestSectionId();
+        if(latestSectionId == null) {
+            latestSectionId = records.get(0).getSectionId();
+        }
+        vo.setLatestSectionId(latestSectionId);
+        // 6.3.处理记录为一个map
+        Map<Long, LearningRecordDTO> rMap = records.stream()
+                .collect(Collectors.toMap(LearningRecordDTO::getSectionId, r -> r));
+        // 6.4.填充学习进度到章节中
+        for (ChapterVO chapter : vo.getChapters()) {
+            for (SectionVO section : chapter.getSections()) {
+                LearningRecordDTO r = rMap.get(section.getId());
+                if (r == null) continue;
+                section.setFinished(r.getFinished());
+                section.setMoment(r.getMoment());
+            }
+        }
+        return vo;
     }
 
     private void sendFinishedCourse(List<Course> finishedCourse) {

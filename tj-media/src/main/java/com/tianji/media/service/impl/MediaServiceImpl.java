@@ -5,13 +5,13 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.course.CourseClient;
-import com.tianji.api.client.trade.TradeClient;
+import com.tianji.api.client.learning.LearningClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.course.MediaQuoteDTO;
 import com.tianji.api.dto.course.SectionInfoDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.domain.dto.PageDTO;
-import com.tianji.common.exceptions.UnauthorizedException;
+import com.tianji.common.exceptions.ForbiddenException;
 import com.tianji.common.utils.*;
 import com.tianji.media.constants.FileErrorInfo;
 import com.tianji.media.domain.dto.MediaDTO;
@@ -49,7 +49,7 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
 
     private final CourseClient courseClient;
 
-    private final TradeClient tradeClient;
+    private final LearningClient learningClient;
 
     private final UserClient userClient;
 
@@ -64,7 +64,7 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
         SectionInfoDTO sectionInfo = courseClient.sectionInfo(sectionId);
         Long courseId = sectionInfo.getCourseId();
         // 2.查询用户课程表，是否是购买过的课程
-        Boolean isMyLesson = tradeClient.checkMyLesson(courseId);
+        Boolean isMyLesson = learningClient.isLessonValid(courseId);
 
         if(BooleanUtils.isTrue(isMyLesson)){
             // 2.1.是，查询媒资信息，直接获取签名
@@ -82,7 +82,7 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
         Boolean trailer = sectionInfo.getTrailer();
         if(BooleanUtils.isFalse(trailer)) {
             // 2.3.不免费，抛出异常
-            throw new UnauthorizedException(FileErrorInfo.MEDIA_NOT_FREE);
+            throw new ForbiddenException(FileErrorInfo.MEDIA_NOT_FREE);
         }
 
         // 3.免费，获取课程信息

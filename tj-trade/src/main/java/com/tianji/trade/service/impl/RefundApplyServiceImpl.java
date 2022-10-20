@@ -443,14 +443,16 @@ public class RefundApplyServiceImpl extends ServiceImpl<RefundApplyMapper, Refun
 
         // 4.如果是退款成功，要取消用户报名的课程
         if (status == RefundResultDTO.SUCCESS) {
-            // 4.1.查询子订单中的课程信息
-            List<Long> cIds = detailService.queryCourseIdsByOrderId(refundApply.getOrderId());
+            // 4.1.查询子订单信息
+            OrderDetail detail = detailService.getById(refundApply.getOrderDetailId());
             // 4.2.发送MQ消息，通知报名成功
             rabbitMqHelper.send(
                     MqConstants.Exchange.ORDER_EXCHANGE,
                     MqConstants.Key.ORDER_REFUND_KEY,
                     OrderBasicDTO.builder()
-                            .orderId(refundApply.getOrderId()).userId(refundApply.getUserId()).courseIds(cIds).build());
+                            .orderId(refundApply.getOrderId())
+                            .userId(refundApply.getUserId())
+                            .courseIds(CollUtils.singletonList(detail.getCourseId())).build());
         }
     }
 

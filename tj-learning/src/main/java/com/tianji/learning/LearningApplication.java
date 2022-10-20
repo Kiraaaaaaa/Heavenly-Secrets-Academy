@@ -13,7 +13,7 @@ import java.net.UnknownHostException;
 
 @SpringBootApplication
 @EnableScheduling
-@MapperScan("com.itheima.learning.mapper")
+@MapperScan("com.tianji.learning.mapper")
 @Slf4j
 public class LearningApplication {
     public static void main(String[] args) throws UnknownHostException {

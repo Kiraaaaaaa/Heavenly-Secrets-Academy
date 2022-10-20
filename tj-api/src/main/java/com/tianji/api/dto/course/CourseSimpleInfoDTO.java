@@ -36,7 +36,7 @@ public class CourseSimpleInfoDTO {
     private Integer sectionNum;
     @ApiModelProperty("课程购买有效期结束时间")
     private LocalDateTime purchaseEndTime;
-    @ApiModelProperty("课程学习有效期")
+    @ApiModelProperty("课程学习有效期，单位：月")
     private Integer validDuration;
     @JsonIgnore
     public List<Long> getCategoryIds(){

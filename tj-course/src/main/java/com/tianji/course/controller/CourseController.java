@@ -204,5 +204,11 @@ public class CourseController {
             return courseService.queryForPage(coursePageQuery);
         }
     }
+
+    @ApiOperation("查询课程基本信息、目录、学习进度")
+    @GetMapping("/{id}/catalogs")
+    public CourseAndSectionVO queryCourseAndCatalogById(@PathVariable("id") Long courseId){
+        return courseService.queryCourseAndCatalogById(courseId);
+    }
 }
 

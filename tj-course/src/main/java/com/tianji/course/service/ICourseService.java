@@ -9,6 +9,7 @@ import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.course.domain.dto.CourseSimpleInfoListDTO;
 import com.tianji.course.domain.po.Course;
 import com.tianji.course.domain.query.CoursePageQuery;
+import com.tianji.course.domain.vo.CourseAndSectionVO;
 import com.tianji.course.domain.vo.CoursePageVO;
 
 import java.util.List;
@@ -94,4 +95,11 @@ public interface ICourseService extends IService<Course> {
      * @return 课程列表
      */
     List<Course> queryByCategoryIdAndLevel(Long categoryId, Integer level);
+
+    /**
+     * 根据课程id查询课程信息、目录信息、进度等
+     * @param courseId 课程id
+     * @return 课程vo
+     */
+    CourseAndSectionVO queryCourseAndCatalogById(Long courseId);
 }
