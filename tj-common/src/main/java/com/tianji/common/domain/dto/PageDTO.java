@@ -22,11 +22,11 @@ import java.util.stream.Collectors;
 @ApiModel(description = "分页结果")
 public class PageDTO<T> {
     @ApiModelProperty("总条数")
-    private Long total;
+    protected Long total;
     @ApiModelProperty("总页码数")
-    private Long pages;
+    protected Long pages;
     @ApiModelProperty("当前页数据")
-    private List<T> list;
+    protected List<T> list;
 
     public static <T> PageDTO<T> empty(Long total, Long pages) {
         return new PageDTO<>(total, pages, CollUtils.emptyList());

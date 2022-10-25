@@ -42,5 +42,6 @@ tj:
         - GET:/users/{id}
         - /users/{id}/type
         - /users/ids
+        - /users/me
   jdbc:
     database: tj_user

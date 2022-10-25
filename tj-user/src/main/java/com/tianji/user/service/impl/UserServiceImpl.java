@@ -93,6 +93,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     public UserDetailVO myInfo() {
         // 1.获取登录用户id
         Long userId = UserContext.getUser();
+        if (userId == null) {
+            return null;
+        }
         // 2.查询用户
         UserDetail userDetail = detailService.queryById(userId);
         AssertUtils.isNotNull(userDetail, USER_ID_NOT_EXISTS);

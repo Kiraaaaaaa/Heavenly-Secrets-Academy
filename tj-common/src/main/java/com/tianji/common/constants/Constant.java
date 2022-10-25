@@ -18,6 +18,10 @@ public interface Constant {
     String DATA_FIELD_NAME_UPDATE_TIME = "update_time";
     String DATA_FIELD_NAME_UPDATE_TIME_CAMEL = "updateTime";
 
+    // 数据字段 - liked_times
+    String DATA_FIELD_NAME_LIKED_TIME = "liked_times";
+    String DATA_FIELD_NAME_LIKED_TIME_CAMEL = "likedTimes";
+
     // 数据字段 - creater
     String DATA_FIELD_NAME_CREATER = "creater";
 

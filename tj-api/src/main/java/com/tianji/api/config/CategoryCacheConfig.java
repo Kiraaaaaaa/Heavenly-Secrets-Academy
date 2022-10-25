@@ -17,9 +17,9 @@ public class CategoryCacheConfig {
     @Bean
     public Cache<String, Map<Long, CategoryBasicDTO>> categoryCaches(){
         return Caffeine.newBuilder()
-                .initialCapacity(1)
-                .maximumSize(10_000)
-                .expireAfterWrite(Duration.ofMinutes(30))
+                .initialCapacity(1) // 容量限制
+                .maximumSize(10_000) // 最大内存限制
+                .expireAfterWrite(Duration.ofMinutes(30)) // 有效期
                 .build();
     }
     /**

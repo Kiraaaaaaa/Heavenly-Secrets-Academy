@@ -18,27 +18,6 @@ public class CategoryCache {
 
     private final CategoryClient categoryClient;
 
-   /* @PostConstruct
-    public void init(){
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            private volatile boolean flag = true;
-            @Override
-            public void run() {
-                while (flag) {
-                    try {
-                        getCategoryMap();
-                    } catch (Exception e) {
-                        ThreadUtil.sleep(10000);
-                        continue;
-                    }
-                    // 取消任务
-                    flag = false;
-                }
-            }
-        }, 0L);
-    }
-*/
     public Map<Long, CategoryBasicDTO> getCategoryMap() {
         return categoryCaches.get("CATEGORY", key -> {
             // 1.从CategoryClient查询
