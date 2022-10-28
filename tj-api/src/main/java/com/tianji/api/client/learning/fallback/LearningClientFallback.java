@@ -13,8 +13,8 @@ public class LearningClientFallback implements FallbackFactory<LearningClient> {
         log.error("查询学习服务异常", cause);
         return new LearningClient() {
             @Override
-            public Boolean isLessonValid(Long courseId) {
-                return false;
+            public Long isLessonValid(Long courseId) {
+                return null;
             }
 
             @Override

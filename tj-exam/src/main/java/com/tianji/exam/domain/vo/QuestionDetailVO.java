@@ -44,6 +44,9 @@ public class QuestionDetailVO {
     @ApiModelProperty("引用次数")
     private Integer useTimes;
 
+    @ApiModelProperty("回答正确次数")
+    private Integer correctTimes;
+
     @ApiModelProperty("回答次数")
     private Integer answerTimes;
 
@@ -61,7 +64,4 @@ public class QuestionDetailVO {
 
     @ApiModelProperty("答案解析")
     private String analysis;
-
-    @ApiModelProperty("准确率，55代表55%")
-    private Integer accuracyRate;
 }

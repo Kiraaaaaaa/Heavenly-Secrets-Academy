@@ -10,7 +10,6 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -50,32 +49,4 @@ public class QuestionDetail implements Serializable {
      * 答案解析
      */
     private String analysis;
-
-    /**
-     * 部门id
-     */
-    private Long depId;
-
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-    /**
-     * 创建人
-     */
-
-    private Long creater;
-
-    /**
-     * 更新人
-     */
-
-    private Long updater;
-
-
 }

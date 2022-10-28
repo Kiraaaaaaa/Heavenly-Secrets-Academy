@@ -64,9 +64,9 @@ public class MediaServiceImpl extends ServiceImpl<MediaMapper, Media> implements
         SectionInfoDTO sectionInfo = courseClient.sectionInfo(sectionId);
         Long courseId = sectionInfo.getCourseId();
         // 2.查询用户课程表，是否是购买过的课程
-        Boolean isMyLesson = learningClient.isLessonValid(courseId);
+        Long lessonId = learningClient.isLessonValid(courseId);
 
-        if(BooleanUtils.isTrue(isMyLesson)){
+        if(lessonId != null){
             // 2.1.是，查询媒资信息，直接获取签名
             Media media = getById(sectionInfo.getMediaId());
             AssertUtils.isNotNull(media, MEDIA_NOT_EXISTS);

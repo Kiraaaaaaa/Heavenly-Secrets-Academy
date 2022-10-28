@@ -15,7 +15,7 @@ public interface LearningClient {
      * @return true：课程有效，false：课程无效，不能学习
      */
     @GetMapping("/lessons/{courseId}/valid")
-    Boolean isLessonValid(@PathVariable("courseId") Long courseId);
+    Long isLessonValid(@PathVariable("courseId") Long courseId);
 
     /**
      * 查询当前用户指定课程的学习进度
