@@ -1,8 +1,8 @@
 package com.tianji.exam.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tianji.api.dto.IdAndNumDTO;
 import com.tianji.exam.domain.po.QuestionBiz;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -18,4 +18,6 @@ import java.util.List;
 public interface QuestionBizMapper extends BaseMapper<QuestionBiz> {
 
     List<IdAndNumDTO> countQuestionScoresByBizIds(@Param("bizIds") Iterable<Long> bizIds);
+
+    List<IdAndNumDTO> countUsedTimes(@Param("qIds") Iterable<Long> qIds);
 }

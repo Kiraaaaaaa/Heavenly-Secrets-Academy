@@ -12,4 +12,13 @@
         </foreach>
         GROUP BY qb.biz_id
     </select>
+    <select id="countUsedTimes" resultType="com.tianji.api.dto.IdAndNumDTO">
+        SELECT question_id AS id,  COUNT(biz_id) AS num
+        FROM question_biz
+        WHERE question_id IN
+        <foreach collection="qIds" separator="," open="(" item="id" close=")">
+            #{id}
+        </foreach>
+        GROUP BY question_id
+    </select>
 </mapper>

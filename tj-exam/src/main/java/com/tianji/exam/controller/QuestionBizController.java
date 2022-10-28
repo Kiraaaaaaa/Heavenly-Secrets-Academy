@@ -40,9 +40,9 @@ public class QuestionBizController {
         return bizService.queryQuestionIdsByBizId(bizId);
     }
 
-    @ApiOperation("查询与业务有关的题目id")
+    @ApiOperation("批量查询与业务有关的题目id")
     @GetMapping("/biz/list")
-    public List<QuestionBizDTO> queryQuestionIdsByBizIds(@ApiParam("业务id") @RequestParam("ids") List<Long> bizIds){
+    public List<QuestionBizDTO> queryQuestionIdsByBizIds(@ApiParam("业务id集合") @RequestParam("ids") List<Long> bizIds){
         return bizService.queryQuestionIdsByBizIds(bizIds);
     }
 

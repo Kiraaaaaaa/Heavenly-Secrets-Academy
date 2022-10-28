@@ -1,5 +1,6 @@
 package com.tianji.api.client.trade;
 
+import com.tianji.api.client.trade.fallback.TradeClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -8,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient("trade-service")
+@FeignClient(value = "trade-service", fallbackFactory = TradeClientFallback.class)
 public interface TradeClient {
     /**
      * 统计指定课程的报名人数

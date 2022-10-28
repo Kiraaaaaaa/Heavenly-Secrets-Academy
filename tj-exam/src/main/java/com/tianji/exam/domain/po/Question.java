@@ -61,9 +61,9 @@ public class Question implements Serializable {
     private Integer difficulty;
 
     /**
-     * 引用次数
+     * 回答正确次数
      */
-    private Integer useTimes;
+    private Integer correctTimes;
 
     /**
      * 回答次数

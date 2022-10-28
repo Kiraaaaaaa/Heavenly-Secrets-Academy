@@ -100,7 +100,7 @@ public class WxPayClient {
                 objectNode.put("mchid", mchId);
         }
         if(isRefund != null) {
-            String notifyPath = isRefund ? "/notify/" : "/notify/refund/";
+            String notifyPath = isRefund ? "/notify/refund/" : "/notify/";
             objectNode.put("notify_url",
                     payProperties.getNotifyHost() + notifyPath + PayConstants.WX_CHANNEL_CODE);
         }

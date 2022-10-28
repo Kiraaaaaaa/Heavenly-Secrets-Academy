@@ -54,6 +54,10 @@ public interface MqConstants {
 
         /*点赞的RoutingKey*/
         String LIKED_TIMES_KEY_TEMPLATE = "{}.times.changed";
+        /*问答*/
+        String QA_LIKED_TIMES_KEY = "QA.times.changed";
+        /*笔记*/
+        String NOTE_LIKED_TIMES_KEY = "NOTE.times.changed";
 
         /*短信系统发送短信*/
         String SMS_MESSAGE = "sms.message";

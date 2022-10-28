@@ -383,7 +383,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 5.发送MQ消息，通知报名成功
         rabbitMqHelper.send(
                 MqConstants.Exchange.ORDER_EXCHANGE,
-                MqConstants.Key.PAY_SUCCESS,
+                MqConstants.Key.ORDER_PAY_KEY,
                 OrderBasicDTO.builder()
                         .orderId(o.getId()).userId(order.getUserId()).courseIds(cIds)
                         .finishTime(o.getPayTime())

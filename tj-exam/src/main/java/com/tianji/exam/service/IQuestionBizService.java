@@ -6,6 +6,7 @@ import com.tianji.exam.domain.po.QuestionBiz;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>
@@ -18,6 +19,8 @@ import java.util.Map;
 public interface IQuestionBizService extends IService<QuestionBiz> {
 
     int countUsedTimes(Long questionId);
+
+    Map<Long, Integer> countUsedTimes(Set<Long> qIds);
 
     List<QuestionBizDTO> queryQuestionIdsByBizId(Long bizId);
 

@@ -8,10 +8,12 @@ import com.tianji.api.dto.IdAndNumDTO;
 import com.tianji.api.dto.exam.QuestionDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.constants.Constant;
-import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
-import com.tianji.common.utils.*;
+import com.tianji.common.utils.BeanUtils;
+import com.tianji.common.utils.CollUtils;
+import com.tianji.common.utils.JsonUtils;
+import com.tianji.common.utils.StringUtils;
 import com.tianji.exam.domain.dto.QuestionFormDTO;
 import com.tianji.exam.domain.po.Question;
 import com.tianji.exam.domain.po.QuestionDetail;
@@ -26,10 +28,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.tianji.exam.constants.ExamErrorInfo.QUESTION_NOT_EXISTS;
@@ -123,12 +122,21 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         if (CollUtils.isEmpty(records)) {
             return PageDTO.empty(page);
         }
-        // 3.查询提问者信息
-        Set<Long> uIds = records.stream().map(Question::getUpdater).collect(Collectors.toSet());
-        List<UserDTO> users = userClient.queryUserByIds(uIds);
-        AssertUtils.isNotEmpty(users, ErrorInfo.Msg.USER_NOT_EXISTS);
-        Map<Long, UserDTO> userMap = users.stream().collect(Collectors.toMap(UserDTO::getId, u -> u));
-
+        // 3.查询VO信息，包含：引用次数、提问者信息
+        Set<Long> qIds = new HashSet<>();
+        Set<Long> uIds = new HashSet<>();
+        for (Question record : records) {
+            qIds.add(record.getId());
+            uIds.add(record.getUpdater());
+        }
+        // 3.1.统计引用次数
+        Map<Long, Integer> countMap = bizService.countUsedTimes(qIds);
+        // 3.2.查询用户
+        Map<Long, UserDTO> userMap = new HashMap<>(uIds.size());
+        if(CollUtils.isNotEmpty(uIds)) {
+            List<UserDTO> users = userClient.queryUserByIds(uIds);
+            userMap = users.stream().collect(Collectors.toMap(UserDTO::getId, u -> u));
+        }
         // 4.处理vo
         List<QuestionPageVO> list = new ArrayList<>(records.size());
         for (Question r : records) {
@@ -140,6 +148,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             v.setUpdater(u == null ? "" : u.getName());
             // 4.3.分类
             v.setCategories(categoryCache.getCategoryNameList(List.of(r.getCateId1(), r.getCateId2(), r.getCateId3())));
+            // 4.4.引用次数
+            v.setUseTimes(countMap.getOrDefault(r.getId(), 0));
         }
         return PageDTO.of(page, list);
     }
@@ -168,7 +178,9 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         v.setUpdater(u == null ? "" : u.getName());
         // 4.3.分类
         v.setCategories(categoryCache.getCategoryNameList(List.of(q.getCateId1(), q.getCateId2(), q.getCateId3())));
-        // TODO 4.4.统计准确率
+        // 4.4.引用次数
+        v.setUseTimes(bizService.countUsedTimes(id));
+        // TODO 4.5.统计准确率
         return v;
     }
 

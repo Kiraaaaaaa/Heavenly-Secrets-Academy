@@ -37,6 +37,14 @@ public class QuestionBizServiceImpl extends ServiceImpl<QuestionBizMapper, Quest
     }
 
     @Override
+    public Map<Long, Integer> countUsedTimes(Set<Long> qIds) {
+        // 1.统计引用次数
+        List<IdAndNumDTO> list = baseMapper.countUsedTimes(qIds);
+        // 2.转换返回
+        return IdAndNumDTO.toMap(list);
+    }
+
+    @Override
     public List<QuestionBizDTO> queryQuestionIdsByBizId(Long bizId) {
         List<QuestionBiz> list = lambdaQuery()
                 .eq(QuestionBiz::getBizId, bizId)
