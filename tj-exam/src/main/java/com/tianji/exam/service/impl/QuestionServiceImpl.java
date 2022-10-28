@@ -12,7 +12,6 @@ import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
-import com.tianji.common.utils.JsonUtils;
 import com.tianji.common.utils.StringUtils;
 import com.tianji.exam.domain.dto.QuestionFormDTO;
 import com.tianji.exam.domain.po.Question;
@@ -69,7 +68,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .setId(question.getId())
                 .setAnalysis(questionDTO.getAnalysis())
                 .setAnswer(questionDTO.getAnswer())
-                .setOptions(JsonUtils.toJsonStr(questionDTO.getOptions()));
+                .setOptions(questionDTO.getOptions());
         detailService.save(detail);
     }
 
@@ -90,7 +89,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .setId(question.getId())
                 .setAnalysis(questionDTO.getAnalysis())
                 .setAnswer(questionDTO.getAnswer())
-                .setOptions(JsonUtils.toJsonStr(questionDTO.getOptions()));
+                .setOptions(questionDTO.getOptions());
         detailService.updateById(detail);
     }
 
@@ -171,7 +170,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         // 4.转换vo
         QuestionDetailVO v = BeanUtils.copyBean(q, QuestionDetailVO.class);
         // 4.1.详情
-        v.setOptions(JsonUtils.toList(detail.getOptions(), String.class));
+        v.setOptions(detail.getOptions());
         v.setAnalysis(detail.getAnalysis());
         v.setAnswer(detail.getAnswer());
         // 4.2.用户
@@ -207,7 +206,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             list.add(d);
             // 3.2.获取详情
             QuestionDetail detail = detailMap.get(q.getId());
-            d.setOptions(JsonUtils.toList(detail.getOptions(), String.class));
+            d.setOptions(detail.getOptions());
             d.setAnalysis(detail.getAnalysis());
             d.setAnswer(detail.getAnswer());
         }
