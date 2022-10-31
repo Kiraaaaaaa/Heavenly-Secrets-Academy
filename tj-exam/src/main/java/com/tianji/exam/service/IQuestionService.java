@@ -1,10 +1,10 @@
 package com.tianji.exam.service;
 
-import com.tianji.common.domain.dto.PageDTO;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.tianji.api.dto.exam.QuestionDTO;
+import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.exam.domain.dto.QuestionFormDTO;
 import com.tianji.exam.domain.po.Question;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.tianji.exam.domain.query.QuestionPageQuery;
 import com.tianji.exam.domain.vo.QuestionDetailVO;
 import com.tianji.exam.domain.vo.QuestionPageVO;
@@ -35,4 +35,6 @@ public interface IQuestionService extends IService<Question> {
     List<QuestionDTO> queryQuestionByIds(List<Long> ids);
 
     Map<Long, Integer> countQuestionNumOfCreater(List<Long> createrIds);
+
+    List<QuestionDTO> queryQuestionByBizId(Long bizId);
 }

@@ -15,6 +15,7 @@ import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.StringUtils;
 import com.tianji.exam.domain.dto.QuestionFormDTO;
 import com.tianji.exam.domain.po.Question;
+import com.tianji.exam.domain.po.QuestionBiz;
 import com.tianji.exam.domain.po.QuestionDetail;
 import com.tianji.exam.domain.query.QuestionPageQuery;
 import com.tianji.exam.domain.vo.QuestionDetailVO;
@@ -132,7 +133,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         Map<Long, Integer> countMap = bizService.countUsedTimes(qIds);
         // 3.2.查询用户
         Map<Long, UserDTO> userMap = new HashMap<>(uIds.size());
-        if(CollUtils.isNotEmpty(uIds)) {
+        if (CollUtils.isNotEmpty(uIds)) {
             List<UserDTO> users = userClient.queryUserByIds(uIds);
             userMap = users.stream().collect(Collectors.toMap(UserDTO::getId, u -> u));
         }
@@ -179,7 +180,6 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         v.setCategories(categoryCache.getCategoryNameList(List.of(q.getCateId1(), q.getCateId2(), q.getCateId3())));
         // 4.4.引用次数
         v.setUseTimes(bizService.countUsedTimes(id));
-        // TODO 4.5.统计准确率
         return v;
     }
 
@@ -219,5 +219,20 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         List<IdAndNumDTO> list = baseMapper.countQuestionOfCreater(createrIds);
         // 2.处理结果
         return IdAndNumDTO.toMap(list);
+    }
+
+    @Override
+    public List<QuestionDTO> queryQuestionByBizId(Long bizId) {
+        // 1.查询中间表
+        List<QuestionBiz> list = bizService.lambdaQuery()
+                .eq(QuestionBiz::getBizId, bizId)
+                .list();
+        if (CollUtils.isEmpty(list)) {
+            return CollUtils.emptyList();
+        }
+        // 2.获取问题id
+        List<Long> ids = list.stream().map(QuestionBiz::getQuestionId).collect(Collectors.toList());
+        // 3.查询数据集合
+        return queryQuestionByIds(ids);
     }
 }
