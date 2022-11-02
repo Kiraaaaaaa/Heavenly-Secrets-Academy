@@ -28,6 +28,10 @@ spring:
           uri: lb://auth-service
           predicates:
             - Path=/as/**
+        - id: ds
+          uri: lb://data-service
+          predicates:
+            - Path=/ds/**
           filters:
             - PreserveHostHeader
         - id: sms
