@@ -92,7 +92,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.tianji.learning.DataApplication</mainClass>
+                    <mainClass>com.tianji.data.DataApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>
