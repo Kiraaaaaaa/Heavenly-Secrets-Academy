@@ -1,6 +1,9 @@
 package com.tianji.course.domain.po;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -51,7 +54,7 @@ public class Category implements Serializable {
     private Integer priority;
 
     /**
-     * 课程分类状态，1：正常，2：禁用
+     * 课程分类状态，1：正常，0：禁用
      */
     private Integer status;
 
@@ -69,13 +72,11 @@ public class Category implements Serializable {
     /**
      * 创建者
      */
-
     private Long creater;
 
     /**
      * 更新者
      */
-
     private Long updater;
 
     @TableLogic

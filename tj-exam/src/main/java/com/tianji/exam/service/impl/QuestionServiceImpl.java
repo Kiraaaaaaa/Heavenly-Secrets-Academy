@@ -98,7 +98,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     public void deleteQuestionById(Long id) {
         // 1.查询题目和业务之间是否有关联
         int usedTimes = bizService.countUsedTimes(id);
-        if (usedTimes >= 0) {
+        if (usedTimes > 0) {
             throw new BadRequestException("题目被使用中，无法删除");
         }
         // 2.删除题目
@@ -234,5 +234,12 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         List<Long> ids = list.stream().map(QuestionBiz::getQuestionId).collect(Collectors.toList());
         // 3.查询数据集合
         return queryQuestionByIds(ids);
+    }
+
+    @Override
+    public Boolean checkNameValid(String name) {
+        return lambdaQuery()
+                .eq(Question::getName, name)
+                .count()<=0;
     }
 }

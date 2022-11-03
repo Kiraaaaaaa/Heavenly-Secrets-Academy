@@ -37,4 +37,6 @@ public interface IQuestionService extends IService<Question> {
     Map<Long, Integer> countQuestionNumOfCreater(List<Long> createrIds);
 
     List<QuestionDTO> queryQuestionByBizId(Long bizId);
+
+    Boolean checkNameValid(String name);
 }

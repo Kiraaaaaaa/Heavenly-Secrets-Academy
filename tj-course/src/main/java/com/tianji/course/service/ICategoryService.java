@@ -6,6 +6,7 @@ import com.tianji.course.domain.dto.CategoryDisableOrEnableDTO;
 import com.tianji.course.domain.dto.CategoryListDTO;
 import com.tianji.course.domain.dto.CategoryUpdateDTO;
 import com.tianji.course.domain.po.Category;
+import com.tianji.course.domain.po.Course;
 import com.tianji.course.domain.vo.CategoryInfoVO;
 import com.tianji.course.domain.vo.CategoryVO;
 import com.tianji.course.domain.vo.SimpleCategoryVO;
@@ -30,7 +31,7 @@ public interface ICategoryService extends IService<Category> {
      * @param categoryPageDTO 分页参数
      * @return 课程分页信息
      */
-    List<CategoryVO> list( CategoryListDTO categoryPageDTO);
+    List<CategoryVO> list(CategoryListDTO categoryPageDTO);
 
     /**
      * 新增课程分页
@@ -65,7 +66,7 @@ public interface ICategoryService extends IService<Category> {
     /**
      * 获取所有分类的数据及结构
      */
-    List<SimpleCategoryVO> all();
+    List<SimpleCategoryVO> all(Boolean admin);
 
     /**
      * 获取课程分类id和名称
@@ -88,4 +89,20 @@ public interface ICategoryService extends IService<Category> {
      * @return 课程分类信息
      */
     Map<Long, String> queryByThirdCateIds(@RequestParam("thirdCateIdList") List<Long> thirdCateIdList);
+
+    /**
+     * 获取课程分类信息
+     *
+     * @param course
+     * @return
+     */
+    List<String> queryCourseCategorys(Course course);
+
+    /**
+     * 校验课程分类是否符合要求,并按顺序返回一二三级课程分类id列表
+     *
+     * @param thirdCateId 三级课程分类
+     * @return 一二三级课程分类id列表
+     */
+    List<Long> checkCategory(Long thirdCateId);
 }

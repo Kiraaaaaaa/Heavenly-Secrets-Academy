@@ -5,17 +5,36 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 public class RabbitMqHelper {
 
     private final RabbitTemplate rabbitTemplate;
     private final MessagePostProcessor processor = new BasicIdMessageProcessor();
+    private final ThreadPoolTaskExecutor executor;
 
     public RabbitMqHelper(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
+        executor = new ThreadPoolTaskExecutor();
+        //配置核心线程数
+        executor.setCorePoolSize(10);
+        //配置最大线程数
+        executor.setMaxPoolSize(15);
+        //配置队列大小
+        executor.setQueueCapacity(99999);
+        //配置线程池中的线程的名称前缀
+        executor.setThreadNamePrefix("mq-async-send-handler");
+
+        // 设置拒绝策略：当pool已经达到max size的时候，如何处理新任务
+        // CALLER_RUNS：不在新线程中执行任务，而是有调用者所在的线程来执行
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        //执行初始化
+        executor.initialize();
     }
 
     /**
@@ -44,4 +63,40 @@ public class RabbitMqHelper {
         // 3.发送消息，同时设置消息id
         rabbitTemplate.convertAndSend(exchange, routingKey, t, new DelayedMessageProcessor(delay), correlationData);
     }
+
+
+    /**
+     * 根据exchange和routingKey 异步发送消息，并指定一个延迟时间
+     *
+     * @param exchange 交换机
+     * @param routingKey 路由KEY
+     * @param t 数据
+     * @param <T> 数据类型
+     */
+    public <T> void sendAsyn(String exchange, String routingKey, T t, Long time) {
+        CompletableFuture.runAsync(()->{
+            try {
+                if(time != null && time > 0){
+                    Thread.sleep( time);
+                }
+                send(exchange, routingKey, t);
+            }catch (Exception e){
+                log.error("推送消息异常，t:{},",t,e);
+            }
+        }, executor);
+    }
+
+
+    /**
+     * 根据exchange和routingKey 异步发送消息
+     *
+     * @param exchange 交换机
+     * @param routingKey 路由KEY
+     * @param t 数据
+     * @param <T> 数据类型
+     */
+    public <T> void sendAsyn(String exchange, String routingKey, T t){
+        sendAsyn(exchange, routingKey, t, null);
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.tianji.trade.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.tianji.api.dto.course.CoursePurchaseInfoDTO;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.trade.domain.po.Order;
 import com.tianji.trade.domain.po.OrderDetail;
@@ -47,4 +48,6 @@ public interface IOrderDetailService extends IService<OrderDetail> {
     Map<Long, Integer> countEnrollNumOfCourse(List<Long> courseIdList);
 
     Map<Long, Integer> countEnrollCourseOfStudent(List<Long> studentIds);
+
+    CoursePurchaseInfoDTO getPurchaseInfoOfCourse(Long courseId);
 }

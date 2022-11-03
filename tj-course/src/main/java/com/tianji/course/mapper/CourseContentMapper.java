@@ -1,7 +1,7 @@
 package com.tianji.course.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tianji.course.domain.po.CourseContent;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * <p>

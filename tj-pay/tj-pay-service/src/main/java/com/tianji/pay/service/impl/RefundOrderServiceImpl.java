@@ -159,7 +159,7 @@ public class RefundOrderServiceImpl extends ServiceImpl<RefundOrderMapper, Refun
         RefundOrder refundOrder = queryByBizRefundOrder(bizRefundOrderId);
         // 2.判断是否为空
         if (refundOrder == null) {
-            throw new BadRequestException(PayErrorInfo.REFUND_ORDER_NOT_FOUND);
+            return null;
         }
         // 3.判断退款单是否退款成功
         if (refundOrder.success()) {

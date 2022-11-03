@@ -23,9 +23,10 @@ import java.util.List;
 /**
  * 课程分类
  *
- * @author wusongsong
- * @since 2022/7/10 11:16
- * @version 1.0.0
+ * @ClassName CategoryController
+ * @Author wusongsong
+ * @Date 2022/7/10 11:16
+ * @Version
  **/
 @RestController
 @Api(tags = "课程分类相关接口")
@@ -83,8 +84,8 @@ public class CategoryController {
 
     @GetMapping("all")
     @ApiOperation("获取所有的课程分类信息，只包含id,名称，课程分类关系")
-    public List<SimpleCategoryVO> all() {
-        return categoryService.all();
+    public List<SimpleCategoryVO> all(@RequestParam(value = "admin",required = false, defaultValue = "0") Boolean admin) {
+        return categoryService.all(admin);
     }
 
     @GetMapping("getAllOfOneLevel")

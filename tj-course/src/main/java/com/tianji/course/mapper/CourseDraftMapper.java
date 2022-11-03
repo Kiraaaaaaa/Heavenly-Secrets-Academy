@@ -18,7 +18,7 @@ import java.util.List;
  * @since 2022-07-21
  */
 public interface CourseDraftMapper extends BaseMapper<CourseDraft> {
-    String COLUMNS = "id, name, course_type, cover_url, first_cate_id, second_cate_id, third_cate_id, free, price, template_type, template_url, status, purchase_start_time, purchase_end_time, step, media_duration,valid_duration, section_num, dep_id, create_time, update_time, creater, updater";
+    String COLUMNS = "id, name, course_type, cover_url, first_cate_id, second_cate_id, third_cate_id, free, price, template_type, template_url, status, purchase_start_time, purchase_end_time, step, media_duration,valid_duration, section_num, dep_id, create_time, update_time, creater, updater,score,publish_time";
 
     @Insert("insert into course_draft(" + COLUMNS + ",can_update) (select " + COLUMNS + ",0 from course where id=#{id} )")
     int insertFromCourse(@Param("id") Long id);

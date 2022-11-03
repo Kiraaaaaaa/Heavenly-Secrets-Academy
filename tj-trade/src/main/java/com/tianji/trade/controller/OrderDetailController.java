@@ -1,6 +1,7 @@
 package com.tianji.trade.controller;
 
 
+import com.tianji.api.dto.course.CoursePurchaseInfoDTO;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.trade.domain.query.OrderDetailPageQuery;
 import com.tianji.trade.domain.vo.OrderDetailAdminVO;
@@ -60,5 +61,10 @@ public class OrderDetailController {
     @GetMapping("/enrollCourse")
     public Map<Long, Integer> countEnrollCourseOfStudent(@RequestParam("studentIds") List<Long> studentIds){
         return detailService.countEnrollCourseOfStudent(studentIds);
+    }
+
+    @GetMapping("purchaseInfo")
+    public CoursePurchaseInfoDTO getPurchaseInfoOfCourse(@RequestParam("courseId") Long courseId){
+        return detailService.getPurchaseInfoOfCourse(courseId);
     }
 }

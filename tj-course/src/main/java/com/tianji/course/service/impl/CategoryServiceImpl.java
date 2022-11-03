@@ -3,8 +3,8 @@ package com.tianji.course.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.tianji.api.constants.CourseStatus;
 import com.tianji.common.constants.Constant;
 import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.enums.CommonStatus;
@@ -13,7 +13,7 @@ import com.tianji.common.exceptions.DbException;
 import com.tianji.common.utils.*;
 import com.tianji.course.constants.CourseConstants;
 import com.tianji.course.constants.CourseErrorInfo;
-import com.tianji.course.constants.RedisConstants;
+import com.tianji.course.constants.CourseStatus;
 import com.tianji.course.domain.dto.CategoryAddDTO;
 import com.tianji.course.domain.dto.CategoryDisableOrEnableDTO;
 import com.tianji.course.domain.dto.CategoryListDTO;
@@ -28,6 +28,8 @@ import com.tianji.course.mapper.SubjectCategoryMapper;
 import com.tianji.course.service.ICategoryService;
 import com.tianji.course.service.ICourseDraftService;
 import com.tianji.course.service.ICourseService;
+import com.tianji.course.utils.CategoryDataWrapper;
+import com.tianji.course.utils.CategoryDataWrapper2;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -35,12 +37,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -73,53 +71,35 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     public List<CategoryVO> list(CategoryListDTO categoryListDTO) {
 
-        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.orderByAsc(Category::getPriority);
-        //查询数据
+        //1.搜索条件根据priority正序排序，id逆序排序
+        LambdaQueryWrapper<Category> queryWrapper =
+                Wrappers.lambdaQuery(Category.class)
+                        .orderByAsc(Category::getPriority)
+                        .orderByDesc(Category::getUpdateTime);
+        //2.查询数据
         List<Category> list = super.list(queryWrapper);
         if (CollUtils.isEmpty(list)) {
             return new ArrayList<>();
         }
 
-        //统计一级二级目录对应的三级目录的数量，做一个三分钟的redis缓存
-        Map<Long, Integer> thirdCategoryNumMap = this.statisticThirdCategory();
+        //3.获取课程分类拥有的课程数量
+        Map<Long, Long> thirdCategoryNumMap = this.statisticThirdCategory();
 
         Map<Long, Integer> cateIdAndNumMap = courseService
-                .countCourseNumOfCategory(list.stream().map(Category::getId).collect(Collectors.toList()));
-        //通过map搭建分类之间的关系
-        Map<Long, CategoryVO> resultMap = new HashMap<>();
-        for (Category category : list) {
-            CategoryVO current = resultMap.get(category.getId());
-            CategoryVO categoryVO = BeanUtils.toBean(category, CategoryVO.class);
-            if (current != null) {
-                //之前创建子分类的时候添加了该分类，需要从map中拿出它已经设置好的信息（子分类列表）
-                categoryVO.setChildren(current.getChildren());
-            } else {
-                categoryVO.setChildren(new ArrayList<>());
-            }
-            //分类信息设置
-            categoryVO.setCourseNum(NumberUtils.null2Zero(cateIdAndNumMap.get(category.getId())));
-            //获取当前分类拥有的三级分类的数量
-            categoryVO.setThirdCategoryNum(NumberUtils.null2Zero(thirdCategoryNumMap.get(category.getId())));
-            categoryVO.setIndex(category.getPriority());
-            categoryVO.setStatusDesc(CommonStatus.desc(category.getStatus()));
-            resultMap.put(category.getId(), categoryVO);
-            //获取父分类
-            CategoryVO parent = resultMap.get(category.getParentId());
-            if (parent == null) { //父分类未创建，创建一个空的分分类
-                parent = new CategoryVO();
-                List<CategoryVO> children = new ArrayList<>();
-                parent.setChildren(children);
-            }
-            //绑定和父分类关系（子分类添加到父分类的子分类列表中）
-            parent.getChildren().add(categoryVO);
-            resultMap.put(category.getParentId(), parent);
-        }
-
-        //采用递归实现数据过滤
-        boolean pass = filter(resultMap.get(CourseConstants.CATEGORY_ROOT), categoryListDTO);
-        if (pass) {
-            return resultMap.get(CourseConstants.CATEGORY_ROOT).getChildren();
+                .countCourseNumOfCategory();
+        //4.通过TreeDataUtils组装数据
+        List<CategoryVO> categoryVOS = TreeDataUtils.parseToTree(list, CategoryVO.class,
+                //4.1设置转换
+                (category, categoryVO) -> {
+                    //4.2设置三级分类数量、课程数量、状态描述、排序
+                    categoryVO.setThirdCategoryNum(NumberUtils.null2Zero(thirdCategoryNumMap.get(category.getId())).intValue());
+                    categoryVO.setCourseNum(NumberUtils.null2Zero(cateIdAndNumMap.get(category.getId())));
+                    categoryVO.setStatusDesc(CommonStatus.desc(category.getStatus()));
+                    categoryVO.setIndex(category.getPriority());
+                }, new CategoryDataWrapper2());
+        //5.根据条件过滤
+        if (CollUtils.isNotEmpty(categoryVOS)) {
+            return fiter(categoryVOS, categoryListDTO);
         } else {
             return new ArrayList<>();
         }
@@ -152,7 +132,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         //将请求参数转换成PO
         Category category = BeanUtils.copyBean(categoryAddDTO, Category.class, (dto, po) -> {
             po.setPriority(dto.getIndex());
-            po.setStatus(CommonStatus.ENABLE.getValue());
+            po.setStatus(CommonStatus.DISABLE.getValue());
         });
         //设置分类级别
         category.setLevel(level);
@@ -163,25 +143,37 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     public CategoryInfoVO get(Long id) {
+        //1.查询数据
         Category category = this.baseMapper.selectById(id);
+        //1.1判空
         if (category == null) {
             return new CategoryInfoVO();
         }
+        //2.数据组装
         CategoryInfoVO categoryInfoVO = BeanUtils.toBean(category, CategoryInfoVO.class);
+        //2.1.课程分类级别
         categoryInfoVO.setCategoryLevel(category.getLevel());
+        //2.2.课程分类状态描述
         categoryInfoVO.setStatusDesc(CommonStatus.desc(category.getStatus()));
+        //2.3课程分类序号
         categoryInfoVO.setIndex(category.getPriority());
-        Long firstCategoryId = null; //所属一级分类
-        if (category.getLevel() == 3) { //三级级分类
+        Long firstCategoryId = null;
+        if (category.getLevel() == 3) {
+            //2.4.查询二级课程分类
             Category secondCategory = this.baseMapper.selectById(category.getParentId()); //所在二级目录
+            //2.5.设置二级课程分类名称
             categoryInfoVO.setSecondCategoryName(secondCategory.getName());
-            firstCategoryId = secondCategory.getParentId(); //所在一级分类
-        } else if (category.getLevel() == 2) { //二级分类
-            firstCategoryId = category.getParentId(); //所属一级分类
+            //2.6.设置一级课程分类id
+            firstCategoryId = secondCategory.getParentId();
+        } else if (category.getLevel() == 2) {
+            //2.7.设置一级课程分类id
+            firstCategoryId = category.getParentId();
         }
 
-        if (firstCategoryId != null) { //不为null，当前分类有所属一级分类
+        if (firstCategoryId != null) {
+            //2.8.查询一级课程分类信息
             Category firstCategory = this.baseMapper.selectById(firstCategoryId);
+            //2.9设置一级课程分类名称
             categoryInfoVO.setFirstCategoryName(firstCategory.getName());
         }
         return categoryInfoVO;
@@ -189,27 +181,35 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     public void delete(Long id) {
-        //1.有子分类不能删除
-        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper();
-        queryWrapper.eq(Category::getParentId, id);
+        //1.子分类查询条件
+        LambdaQueryWrapper<Category> queryWrapper =
+                Wrappers.lambdaQuery(Category.class)
+                        .eq(Category::getParentId, id);
+        //1.1查询子分类信息
         List<Category> categories = this.baseMapper.selectList(queryWrapper);
+        //1.2.子分类判空
         if (CollectionUtil.isNotEmpty(categories)) { //分类有子分类
             throw new BizIllegalException(CourseErrorInfo.Msg.CATEGORY_HAVE_CHILD);
         }
+        //2.查询分类信息
         Category category = this.baseMapper.selectById(id);
+        //2.1.判空
         if (category == null) {
             throw new DbException(ErrorInfo.Msg.DB_DELETE_EXCEPTION);
         }
-        //2.分类已经有课程不能删除
+        //3.统计分类拥有的课程数量
         Integer courseNum = courseService.countCourseNumOfCategory(id);
-        if(courseNum > 0) {
+        //3.1.分类拥有课程数据量判空
+        if (courseNum > 0) {
             throw new BizIllegalException(CourseErrorInfo.Msg.CATEGORY_DELETE_HAVE_COURSE);
         }
-        //3.分类有题目不能删除 题目数量
+        //4.统计分类拥有的题目数量
         int subjectNum = subjectCategoryMapper.countSubjectNum(category.getId(), category.getLevel());
+        //4.1.分类拥有的题目数量判空
         if (subjectNum > 0) { //课程含有题目
             throw new BizIllegalException(CourseErrorInfo.Msg.CATEGORY_DELETE_HAVE_SUBJECT);
         }
+        //5.删除课程
         int result = this.baseMapper.deleteById(id);
         if (result <= 0) {
             throw new DbException(CourseErrorInfo.Msg.CATEGORY_DELETE_FAILD);
@@ -220,10 +220,13 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      * 功能点：
      * 1.启用或禁用课程，下一级或下一级的课程同时启用或禁用，
      * 联动启用或禁用
+     *
+     * @param categoryDisableOrEnableDTO
      */
     @Override
     @Transactional(rollbackFor = {DbException.class, Exception.class})
     public void disableOrEnable(CategoryDisableOrEnableDTO categoryDisableOrEnableDTO) {
+
         //1.获取禁用/启用的课程分类
         Category category = baseMapper.selectById(categoryDisableOrEnableDTO.getId());
         if (category == null) {
@@ -284,7 +287,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             baseMapper.update(updateCategory, updateWrapper);
         }
         //6.课程分类禁用触发课程批量下架
-        if(categoryDisableOrEnableDTO.getStatus() == CommonStatus.DISABLE.getValue()) {
+        if (categoryDisableOrEnableDTO.getStatus() == CommonStatus.DISABLE.getValue()) {
             Long userId = UserContext.getUser();
             taskExecutor.execute(() -> {
                 batchDownShelfCourse(category.getId(), category.getLevel(), userId);
@@ -296,15 +299,19 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     @Transactional(rollbackFor = {DbException.class, Exception.class})
     public void update(CategoryUpdateDTO categoryUpdateDTO) {
+        //1.查询更新数据
         Category category = this.baseMapper.selectById(categoryUpdateDTO.getId());
         if (category == null) {
             throw new BizIllegalException(CourseErrorInfo.Msg.CATEGORY_NOT_FOUND);
         }
+        //2.校验名称是否可以更新
         checkSameName(category.getParentId(), categoryUpdateDTO.getName(), categoryUpdateDTO.getId());
+        //3.设置更新字段
         Category updateCategory = new Category();
         updateCategory.setId(categoryUpdateDTO.getId()); //修改课程分类id
         updateCategory.setPriority(categoryUpdateDTO.getIndex());
         updateCategory.setName(categoryUpdateDTO.getName());
+        //4.更新
         int result = this.baseMapper.updateById(updateCategory);
         if (result <= 0) {
             throw new BizIllegalException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
@@ -312,91 +319,62 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public List<SimpleCategoryVO> all() {
-        //升序查询所有未禁用的课程分类
-        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Category::getStatus, CommonStatus.ENABLE.getValue())
-                .orderByAsc(Category::getPriority);
+    public List<SimpleCategoryVO> all(Boolean admin) {
+        // 1.查询有课程的课程分类id列表
+        List<Long> categoryIdList = admin ?
+                null :courseService.getCategoryIdListWithCourse();
+        // 1.1.判空
+        if(!admin && CollUtils.isEmpty(categoryIdList)){
+            return new ArrayList<>();
+        }
+
+        // 2.升序查询所有未禁用的课程分类
+        LambdaQueryWrapper<Category> queryWrapper = Wrappers.lambdaQuery(Category.class)
+                .eq(!admin, Category::getStatus, CommonStatus.ENABLE.getValue())
+                .in(CollectionUtil.isNotEmpty(categoryIdList), Category::getId, categoryIdList)
+                .orderByAsc(Category::getPriority)
+                .orderByDesc(Category::getId);
         List<Category> categories = this.baseMapper.selectList(queryWrapper);
 
-        if (CollectionUtil.isEmpty(categories)) {
-            return new ArrayList<>();
-        }
-        Map<Long, SimpleCategoryVO> categoryVOMap = new HashMap<>();
-        categories.forEach(category -> {
-            SimpleCategoryVO simpleCategoryVO = categoryVOMap.get(category.getId());
-            //分类已经添加上只补充名字就可以
-            if (simpleCategoryVO != null) {
-                simpleCategoryVO.setName(category.getName());
-            } else {
-                //分类未添加，生成SimpleCategoryVO
-//                simpleCategoryVO = new SimpleCategoryVO(category.getId(), category.getName(), new ArrayList<>(), category.getLevel());
-                simpleCategoryVO = BeanUtils.toBean(category, SimpleCategoryVO.class);
-                simpleCategoryVO.setChildren(new ArrayList<>());
-                //将课程分类放入到map中
-                categoryVOMap.put(category.getId(), simpleCategoryVO);
-            }
+        // 3.将课程分类转换成树状结构
+        List<SimpleCategoryVO> simpleCategoryVOS = TreeDataUtils.parseToTree(categories,
+                SimpleCategoryVO.class, new CategoryDataWrapper());
+        // 4.过滤掉没有三级子课程分类的课程分类
+        filter(simpleCategoryVOS);
+        return simpleCategoryVOS;
 
-            //父类是否已经放入到map，没有造一个，但是缺少名字
-            SimpleCategoryVO parentCategory = categoryVOMap.get(category.getParentId());
-            if (parentCategory == null) {
-                parentCategory = BeanUtils.toBean(category, SimpleCategoryVO.class);
-                parentCategory.setChildren(new ArrayList<>());
-                //将课程父分类放入到map中
-                categoryVOMap.put(category.getParentId(), parentCategory);
-            }
-            //将分类加入到课程分类的父分类中
-            parentCategory.getChildren().add(simpleCategoryVO);
-
-        });
-        //从map中拿出id为0的分类信息，父分类的children就是所有的一级分类
-        if(CollUtils.isEmpty(categoryVOMap)){
-            return new ArrayList<>();
-        }
-        //过滤掉二级分类children为空的
-        for (SimpleCategoryVO simpleCategoryVO : categoryVOMap.values()){
-            if(simpleCategoryVO.getLevel() == 2 && CollUtils.isEmpty(simpleCategoryVO.getChildren())) {
-                //二级目录没有对应的三级目录
-                SimpleCategoryVO firstCategory = categoryVOMap.get(simpleCategoryVO.getParentId());
-                if(firstCategory != null) {
-                    firstCategory.getChildren().remove(simpleCategoryVO);
-                }
-            }
-        }
-        List<SimpleCategoryVO> firstCategoryList = categoryVOMap.get(CourseConstants.CATEGORY_ROOT).getChildren();
-        //过滤掉一级分类children为空的分类
-        return firstCategoryList.stream().filter(simpleCategoryVO ->
-                CollUtils.isNotEmpty(simpleCategoryVO.getChildren())).collect(Collectors.toList());
     }
 
     @Override
     public Map<Long, String> getCateIdAndName() {
         List<Category> categories = this.baseMapper.selectList(null);
-        return categories.stream().collect(Collectors.toMap(Category::getId, Category::getName));
+        return categories.stream()
+                .collect(Collectors.toMap(Category::getId, Category::getName));
     }
 
     @Override
     public List<CategoryVO> allOfOneLevel() {
-        //查询数据
+        //1.查询数据
         List<Category> list = super.list();
         if (CollUtils.isEmpty(list)) {
             return new ArrayList<>();
         }
 
-        //统计一级二级目录对应的三级目录的数量，做一个三分钟的redis缓存
-        Map<Long, Integer> thirdCategoryNumMap = this.statisticThirdCategory();
+        //2.统计一级二级目录对应的三级目录的数量，做一个三分钟的redis缓存
+        Map<Long, Long> thirdCategoryNumMap = this.statisticThirdCategory();
         return BeanUtils.copyList(list, CategoryVO.class, (category, categoryVO) -> {
-            categoryVO.setThirdCategoryNum(thirdCategoryNumMap.get(category.getId()));
+            categoryVO.setThirdCategoryNum(thirdCategoryNumMap.getOrDefault(category.getId(), 0L).intValue());
         });
     }
 
     @Override
     public List<Category> queryByIds(List<Long> ids) {
-        if(CollUtils.isEmpty(ids)){
+        if (CollUtils.isEmpty(ids)) {
             return new ArrayList<>();
         }
-        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Category::getId, ids);
+        LambdaQueryWrapper<Category> queryWrapper =
+                Wrappers.lambdaQuery(Category.class)
+                        .in(Category::getId, ids);
         return baseMapper.selectList(queryWrapper);
     }
 
@@ -405,7 +383,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         Map<Long, String> resultMap = new HashMap<>();
         //1.校验
         // 1.1判断参数是否为空
-        if(CollUtils.isEmpty(thirdCateIdList)){
+        if (CollUtils.isEmpty(thirdCateIdList)) {
             return resultMap;
         }
         // 1.2校验分类id都是三级分类id
@@ -413,12 +391,13 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         queryWrapper.eq(Category::getLevel, 3)
                 .in(Category::getId, thirdCateIdList);
         int thirdCateNum = baseMapper.selectCount(queryWrapper);
-        if(!NumberUtils.equals(thirdCateNum, thirdCateIdList.size())){
+        if (!NumberUtils.equals(thirdCateNum, thirdCateIdList.size())) {
             throw new BizIllegalException(ErrorInfo.Msg.REQUEST_PARAM_ILLEGAL);
         }
         //2.查询所有分类，并将分类转化成map
         List<Category> categories = baseMapper.selectList(null);
-        Map<Long, Category> categoryMap = categories.stream().collect(Collectors.toMap(Category::getId, p -> p));
+        Map<Long, Category> categoryMap = categories.stream()
+                .collect(Collectors.toMap(Category::getId, p -> p));
         //3.遍历三级分类id
         for (Long thirdCateId : thirdCateIdList) {
             //3.1三级分类
@@ -434,29 +413,97 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         return resultMap;
     }
 
+    @Override
+    public List<String> queryCourseCategorys(Course course) {
+        //1.查询课程分类
+        List<Category> categories = baseMapper.selectBatchIds(
+                Arrays.asList(course.getFirstCateId(),
+                        course.getSecondCateId(),
+                        course.getThirdCateId()));
+        if (CollUtils.isNotEmpty(categories)) {
+            return new ArrayList<>();
+        }
+        Map<Long, String> categoryIdAndNameMap = categories.stream()
+                .collect(Collectors.toMap(Category::getId, Category::getName));
+        //2.按照分类层级关系组装成列表
+        return Arrays.asList(categoryIdAndNameMap.get(course.getFirstCateId()),
+                categoryIdAndNameMap.get(course.getSecondCateId()),
+                categoryIdAndNameMap.get(course.getThirdCateId()));
+    }
+
+    @Override
+    public List<Long> checkCategory(Long thirdCateId) {
+        //1.查询三级课程分类
+        Category thirdCategory = baseMapper.selectById(thirdCateId);
+        //1.1判断三级课程分类状态
+        if (thirdCategory.getStatus() != CommonStatus.ENABLE.getValue()) {
+            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_CATEGORY_NOT_FOUND);
+        }
+        //2.查询二级课程分类
+        Category secondCategory = baseMapper.selectById(thirdCategory.getParentId());
+        //2.1判断三级课程分类状态
+        if (secondCategory.getStatus() != CommonStatus.ENABLE.getValue()) {
+            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_CATEGORY_NOT_FOUND);
+        }
+        //3.返回数据
+        return Arrays.asList(secondCategory.getParentId(), secondCategory.getId(), thirdCateId);
+    }
+
+    /**
+     * 获取一级二级没有下一级分类的分类id列表
+     * @return
+     */
+    private List<Long> getCateIdsWithoutChildCateId(){
+        // 1.查询数据
+        List<Category> list = list();
+        // 1.1.判空
+        if(CollUtils.isEmpty(list)){
+            return new ArrayList<>();
+        }
+        // 2.list转map
+        Map<Long, List<Category>> idAndParentIdMap = list.stream()
+                .collect(Collectors.groupingBy(Category::getParentId));
+        // 3.遍历
+        return list.stream()
+                .filter(category -> category.getLevel() < 3 && !idAndParentIdMap.containsKey(category.getId()))
+                .map(Category::getId)
+                .collect(Collectors.toList());
+    }
+
 
     /**
      * 新增或更新时校验是否有同名的分类
      *
+     * @param parentId  父id
+     * @param name
+     * @param currentId
      */
     private void checkSameName(Long parentId, String name, Long currentId) {
+        //1.统计同一个父分类的子分类列表中有同名分类，或和父分类同名查询条件
         LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-        //同一个父id的分类不能同名
-        //不能和父类同名
         queryWrapper.or().eq(true, Category::getParentId, parentId)
                 .eq(Category::getName, name)
                 .eq(Category::getDeleted, Constant.DATA_NOT_DELETE);
         queryWrapper.or().eq(Category::getId, parentId)
                 .eq(Category::getName, name);
+        //2.统计符合上述条件的分类列表
         List<Category> categories = this.baseMapper.selectList(queryWrapper);
-        //新增情况下，有同名的分类
+        //3.新增情况下，有同名的分类
         if (currentId == null && CollectionUtil.isNotEmpty(categories)) {
             throw new BizIllegalException(CourseErrorInfo.Msg.CATEGORY_SAME_NAME);
         }
-        //更新情况下出现同名，需要判断是否是当前分类的名称
+        //4.更新情况下出现同名，需要判断是否是当前分类的名称
         if (CollectionUtil.isNotEmpty(categories) && categories.get(0).getId() != currentId.longValue()) {
             throw new BizIllegalException(CourseErrorInfo.Msg.CATEGORY_SAME_NAME);
         }
+    }
+
+    private void setThirdCategoryNum(List<CategoryVO> categoryVOList){
+        // 1.判空
+        if(CollUtils.isEmpty(categoryVOList)){
+            return;
+        }
+        // 2.
     }
 
     /**
@@ -464,46 +511,51 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      *
      * @return
      */
-    private Map<Long, Integer> statisticThirdCategory() {
-        Map<Long, Integer> result = new HashMap<>();
-
-        Object resultObj = redisTemplate.opsForValue().get(RedisConstants.REDIS_KEY_CATEGORY_THIRD_NUMBER);
-        if (resultObj != null) {
-            return (Map<Long, Integer>) resultObj;
+    private Map<Long, Long> statisticThirdCategory() {
+        Map<Long, Long> result = new HashMap<>();
+        // 1.查询所有数据
+        List<Category> categories = baseMapper.selectList(null);
+        // 1.1.判空
+        if(CollUtils.isEmpty(categories)){
+            return result;
         }
 
-        synchronized (RedisConstants.REDIS_KEY_CATEGORY_THIRD_NUMBER) {
-            //再次查看
-            resultObj = redisTemplate.opsForValue().get(RedisConstants.REDIS_KEY_CATEGORY_THIRD_NUMBER);
-            if (resultObj != null) {
-                return (Map<Long, Integer>) resultObj;
-            }
-            List<Category> list = super.list();
-            if (CollectionUtil.isEmpty(list)) {
-                return result;
-            }
-            Map<Long, List<Category>> map = list.stream().collect(Collectors.groupingBy(Category::getParentId));
-            for (Map.Entry<Long, List<Category>> entry : map.entrySet()) {
-                result.put(entry.getKey(), entry.getValue().size());
-            }
-            //一级分类
-            List<Category> firstCategory = map.get(CourseConstants.CATEGORY_ROOT);
-            if (CollUtils.isNotEmpty(firstCategory)) {
-                firstCategory.forEach(category -> {
-                    List<Category> categories = map.get(category.getId());
-                    //当前一级分类没有二级分类
-                    if (CollUtils.isEmpty(categories)) {
-                        result.put(category.getId(), 0);
-                        return;
-                    }
-                    //当前一级分类有二级分类
-                    long sum = categories.stream().collect(Collectors.summarizingInt(c -> NumberUtils.null2Zero(result.get(c.getId())))).getSum();
-                    result.put(category.getId(), (int) sum);
-                });
-            }
-            redisTemplate.opsForValue().set(RedisConstants.REDIS_KEY_CATEGORY_THIRD_NUMBER, result, 3, TimeUnit.MINUTES);
+        // 2.二级分类的拥有的三级课程分类数量
+        Map<Long, Long> collect = categories.stream()
+                .filter(category -> category.getLevel() == 3)
+                .collect(Collectors.groupingBy(Category::getParentId, Collectors.counting()));
+        result.putAll(collect);
+        // 3.一级分类拥有的三级课程分类数量
+        Map<Long, List<Category>> category2Map = categories.stream()
+                .filter(category -> category.getLevel() == 2)
+                .collect(Collectors.groupingBy(Category::getParentId));
+        // 3.1.遍历category2Map
+        for (Map.Entry<Long, List<Category>> entry : category2Map.entrySet()){
+            long sum = entry.getValue()
+                    .stream()
+                    .map(category -> NumberUtils.null2Zero(result.get(category.getId())))
+                    .collect(Collectors.summarizingLong(num -> num))
+                    .getSum();
+            result.put(entry.getKey(), sum);
         }
+        // 4.返回结果
         return result;
+    }
+
+    /**
+     * 根据条件过滤课程分类
+     *
+     * @param categoryVOList
+     * @param categoryListDTO
+     * @return
+     */
+    private List<CategoryVO> fiter(List<CategoryVO> categoryVOList, CategoryListDTO categoryListDTO) {
+        if (CollUtils.isEmpty(categoryVOList)) {
+            return new ArrayList<>();
+        }
+        return categoryVOList.stream().
+                filter(categoryVO -> filter(categoryVO, categoryListDTO))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -553,20 +605,42 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         UserContext.setUser(userId);
         //2.查询需要下架的课程
         List<Course> courses = courseService.queryByCategoryIdAndLevel(categoryId, level);
-        if(CollUtils.isEmpty(courses)){
+        if (CollUtils.isEmpty(courses)) {
             return;
         }
         //3.遍历下架课程
         for (Course course : courses) {
             //4.判断状态是否可以下架
-            if(!CourseStatus.SHELF.equals(course.getStatus())){
+            if (!CourseStatus.SHELF.equals(course.getStatus())) {
                 continue;
             }
             try {
                 //5.课程下架
                 courseDraftService.downShelf(course.getId());
-            }catch (Exception e) {
+            } catch (Exception e) {
                 log.error("课程下架异常");
+            }
+        }
+    }
+
+    /**
+     * 过滤掉没有三级课程分类的
+     * @param simpleCategoryVOS
+     */
+    private void filter(List<SimpleCategoryVO> simpleCategoryVOS){
+        // 1.判空
+        if(CollUtils.isEmpty(simpleCategoryVOS)){
+            return;
+        }
+        // 2.遍历分类列表
+        for (int count = simpleCategoryVOS.size() -1; count >= 0; count--) {
+            SimpleCategoryVO simpleCategoryVO = simpleCategoryVOS.get(count);
+            if(simpleCategoryVO.getLevel() == 3){
+                continue;
+            }
+            filter(simpleCategoryVO.getChildren());
+            if(CollUtils.isEmpty(simpleCategoryVO.getChildren())){
+                simpleCategoryVOS.remove(count);
             }
         }
     }

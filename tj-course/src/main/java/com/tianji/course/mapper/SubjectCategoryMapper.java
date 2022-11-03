@@ -1,7 +1,7 @@
 package com.tianji.course.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tianji.course.domain.po.SubjectCategory;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -26,9 +26,9 @@ public interface SubjectCategoryMapper extends BaseMapper<SubjectCategory> {
     /**
      * 获取指定课程分类下所有课程的数量
      *
-     * @param categoryId 分类id
-     * @param level 分类级别
-     * @return 数量
+     * @param categoryId
+     * @param level
+     * @return
      */
     @Select("<script>select count(*) from subject_category where 1= 1 <if test='level==1'> and first_cate_id=#{categoryId} </if> " +
             "<if test='level==2'> and second_cate_id=#{categoryId} </if>" +

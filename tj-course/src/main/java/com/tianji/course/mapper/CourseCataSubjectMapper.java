@@ -1,8 +1,8 @@
 package com.tianji.course.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tianji.course.domain.po.CataIdAndSubScore;
 import com.tianji.course.domain.po.CourseCataSubject;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;

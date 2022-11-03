@@ -144,4 +144,13 @@ public class UserController {
         }
         return user.getId();
     }
+
+    @ApiOperation("检查用户手机号是否存在")
+    @GetMapping("checkCellphone")
+    public Boolean checkCellPhone(@RequestParam("cellphone") String cellPhone){
+        return userService.lambdaQuery()
+                .eq(User::getCellPhone, cellPhone)
+                // .in(User::getType, UserType.STAFF, UserType.TEACHER)
+                .count() <= 0;
+    }
 }

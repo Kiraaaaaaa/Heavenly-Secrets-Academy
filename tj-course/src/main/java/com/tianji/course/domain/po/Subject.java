@@ -1,10 +1,12 @@
 package com.tianji.course.domain.po;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.StringUtils;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
@@ -111,6 +113,11 @@ public class Subject implements Serializable {
     private String analysis;
 
     /**
+     * 回答正确次数
+     */
+    private Integer correctTimes;
+
+    /**
      * 分值
      */
     private Integer score;
@@ -141,13 +148,11 @@ public class Subject implements Serializable {
     /**
      * 创建人
      */
-
     private Long creater;
 
     /**
      * 更新人
      */
-
     private Long updater;
 
     /**
@@ -156,12 +161,12 @@ public class Subject implements Serializable {
     @TableLogic
     private Integer deleted;
 
-    public List<String> getOptions(){
+    public List<String> getOptions() {
         return Stream.of(option1, option2, option3, option4, option5, option6, option7, option8, option9, option10)
                 .filter(StringUtils::isNotBlank).collect(Collectors.toList());
     }
 
-    public List<Integer> getAnswers(){
+    public List<Integer> getAnswers() {
         return CollUtils.convertToInteger(StringUtils.split(answer, ","));
     }
 }

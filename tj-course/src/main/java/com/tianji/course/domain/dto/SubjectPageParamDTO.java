@@ -7,9 +7,10 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * @author wusongsong
- * @since 2022/7/11 20:07
- * @version 1.0.0
+ * @ClassName SubjectPageParamDTO
+ * @Author wusongsong
+ * @Date 2022/7/11 20:07
+ * @Version
  **/
 @Data
 @ApiModel(description = "题目分页参数")

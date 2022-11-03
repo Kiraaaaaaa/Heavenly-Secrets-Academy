@@ -5,19 +5,17 @@ import com.tianji.course.service.ICourseCatalogueService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
  * 目录课程相关接口
  *
- * @author wusongsong
- * @since 2022/7/27 13:59
- * @version 1.0.0
+ * @ClassName CatalogueController
+ * @Author wusongsong
+ * @Date 2022/7/27 13:59
+ * @Version
  **/
 @Api(tags = "章节目录相关接口")
 @RestController
@@ -31,5 +29,11 @@ public class CatalogueController {
     @ApiOperation("根据章节目录批量查询基础信息")
     public List<CataSimpleInfoVO> batchQuery(@RequestParam("ids") List<Long> ids) {
         return courseCatalogueService.getManyCataSimpleInfo(ids);
+    }
+
+    @GetMapping("querySectionInfoById/{id}")
+    @ApiOperation("获取小节信息")
+    public CataSimpleInfoVO querySectionInfoById(@PathVariable("id") Long id) {
+        return courseCatalogueService.querySectionInfoById(id);
     }
 }

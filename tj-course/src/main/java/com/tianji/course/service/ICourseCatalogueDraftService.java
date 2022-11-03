@@ -6,7 +6,7 @@ import com.tianji.course.domain.dto.CataSubjectDTO;
 import com.tianji.course.domain.dto.CourseMediaDTO;
 import com.tianji.course.domain.po.CourseCatalogueDraft;
 import com.tianji.course.domain.vo.CataSimpleSubjectVO;
-import com.tianji.api.dto.course.CatalogueDTO;
+import com.tianji.course.domain.vo.CataVO;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +36,7 @@ public interface ICourseCatalogueDraftService extends IService<CourseCatalogueDr
      * @param see      是否用于查看数据
      * @return
      */
-    List<CatalogueDTO> queryCourseCatalogues(Long courseId, Boolean see, Boolean withPractice);
+    List<CataVO> queryCourseCatalogues(Long courseId, Boolean see, Boolean withPractice);
 
     /**
      * 保存媒资信息
@@ -91,5 +91,14 @@ public interface ICourseCatalogueDraftService extends IService<CourseCatalogueDr
      * @return
      */
     Integer totalSectionNums(Long courseId);
+
+    /**
+     * 根据类型查询课程小节/章/测试id列表
+     *
+     * @param courseId
+     * @param types
+     * @return
+     */
+    List<Long> queryCataIdsOfCourse(Long courseId, List<Integer> types);
 
 }

@@ -26,6 +26,8 @@ public class RefundApplyVO {
 
     @ApiModelProperty("申请退款原因")
     private String refundReason;
+    @ApiModelProperty("申请退款说明")
+    private String questionDesc;
 
     @ApiModelProperty("学员昵称")
     private String studentName;

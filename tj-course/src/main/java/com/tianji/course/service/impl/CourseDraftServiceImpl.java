@@ -2,14 +2,15 @@ package com.tianji.course.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.exam.ExamClient;
+import com.tianji.api.client.learning.LearningClient;
 import com.tianji.api.client.trade.TradeClient;
 import com.tianji.api.client.user.UserClient;
-import com.tianji.api.constants.CourseStatus;
-import com.tianji.api.dto.course.CourseSearchDTO;
-import com.tianji.api.dto.exam.QuestionBizDTO;
+import com.tianji.api.dto.course.CourseDTO;
+import com.tianji.api.dto.course.CoursePurchaseInfoDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.ErrorInfo;
@@ -21,22 +22,26 @@ import com.tianji.common.exceptions.DbException;
 import com.tianji.common.utils.*;
 import com.tianji.course.constants.CourseConstants;
 import com.tianji.course.constants.CourseErrorInfo;
+import com.tianji.course.constants.CourseStatus;
 import com.tianji.course.domain.dto.CourseBaseInfoSaveDTO;
+import com.tianji.course.domain.dto.CoursePageQuery;
 import com.tianji.course.domain.po.*;
-import com.tianji.course.domain.query.CoursePageQuery;
 import com.tianji.course.domain.vo.CourseBaseInfoVO;
 import com.tianji.course.domain.vo.CoursePageVO;
 import com.tianji.course.domain.vo.CourseSaveVO;
+import com.tianji.course.domain.vo.NameExistVO;
 import com.tianji.course.mapper.*;
 import com.tianji.course.service.*;
-import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.ValidatorFactory;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -61,9 +66,6 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
 
     @Autowired
     private CourseContentMapper courseContentMapper;
-
-    @Autowired
-    private CategoryMapper categoryMapper;
 
     @Autowired
     private ValidatorFactory validatorFactory;
@@ -98,161 +100,196 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
     @Autowired
     private ExamClient examClient;
 
+    @Autowired
+    private LearningClient learningClient;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public CourseSaveVO save(CourseBaseInfoSaveDTO courseBaseInfoSaveDTO) {
-
-        //数据校验
-        if (courseBaseInfoSaveDTO.getId() == null) { //新增数据需要校验参数
+        List<Long> categoryIdList = null;
+        Course course = null;
+        //1.数据校验
+        if (courseBaseInfoSaveDTO.getId() == null) {
+            //1.1新增数据调起数据校验器
             ViolationUtils.process(validatorFactory.getValidator().validate(courseBaseInfoSaveDTO));
+            //1.1.2.校验课程分类
+            categoryIdList = categoryService.checkCategory(courseBaseInfoSaveDTO.getThirdCateId());
         } else {
-            Course course = courseMapper.selectById(courseBaseInfoSaveDTO.getId());
-            if (course == null) { //修改数据，但是数据还在草稿阶段，需要校验数据
+            //1.2.未上架课程校验
+            course = courseMapper.selectById(courseBaseInfoSaveDTO.getId());
+            if (course == null) {
+                //1.2.1.未上架课程校验请求参数
                 ViolationUtils.process(validatorFactory.getValidator().validate(courseBaseInfoSaveDTO));
+                //1.2.2.同名课程判空
+                checkSameCourse(courseBaseInfoSaveDTO.getId(), courseBaseInfoSaveDTO.getName());
+                //1.2.3.校验课程分类
+                categoryIdList = categoryService.checkCategory(courseBaseInfoSaveDTO.getThirdCateId());
             }
         }
 
-        CourseDraft courseDraft = null;
-        //内容草稿中没有重要信息，可以直接从DTO中设置
+        CourseDraft courseDraft = new CourseDraft();
+        //2.数据封装
+        //2.1.content数据封装 课程介绍、课程细节、适用人群
         CourseContentDraft courseContentDraft = new CourseContentDraft();
         courseContentDraft.setCourseIntroduce(courseBaseInfoSaveDTO.getIntroduce());
         courseContentDraft.setCourseDetail(courseBaseInfoSaveDTO.getDetail());
         courseContentDraft.setUsePeople(courseBaseInfoSaveDTO.getUsePeople());
-
-
-        //将已经上架的课程信息copy到草稿中
-        if (courseBaseInfoSaveDTO.getId() != null) {
-            Course course = courseMapper.selectById(courseBaseInfoSaveDTO.getId());
-            if (course != null) { //课程已经上架
-                courseDraft = BeanUtils.toBean(course, CourseDraft.class);
-            }
-        }
-
-        if (courseDraft != null) { //课程已经上架，设置参数
-            //已经上架的课程可以修改封
-            courseDraft.setCoverUrl(courseBaseInfoSaveDTO.getCoverUrl());
-        } else {
-            //只校验正式环境的名称
-            int countSameNameNum = courseMapper.countSameName(courseBaseInfoSaveDTO.getName());
-            if (countSameNameNum > 0) { //名称已经存在，提交时做双重校验
-                throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_NAME_EXISTS);
-            }
-            countSameNameNum = baseMapper.countByNameAndId(courseBaseInfoSaveDTO.getName(), courseBaseInfoSaveDTO.getId());
-            if(countSameNameNum > 0){
-                throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_NAME_EXISTS);
-            }
-            courseDraft = BeanUtils.toBean(courseBaseInfoSaveDTO, CourseDraft.class);
-            if (courseBaseInfoSaveDTO.getId() == null) {
-                long id = IdWorker.getId();
-                //课程id和内容id共用同一个id
-                courseDraft.setId(id);
-                courseContentDraft.setId(id);
-                courseDraft.setStep(CourseConstants.CourseStep.BASE_INFO);
-            }
-            //三级分类
-            Category thirdCategory = categoryMapper.selectById(courseBaseInfoSaveDTO.getThirdCateId());
-            if (thirdCategory == null) {
-                throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_SAVE_CATEGORY_NOT_FOUND);
-            }
-            //二级分类
-            Category secondCategory = categoryMapper.selectById(thirdCategory.getParentId());
-            if(secondCategory == null){
-                throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_SAVE_CATEGORY_NOT_FOUND);
-            }
-            courseDraft.setFirstCateId(secondCategory.getParentId()); //一级分类id
-            courseDraft.setSecondCateId(secondCategory.getId()); //二级分类id
-            //数据库中存的是以分为单位
+        //2.2.课程封面和课程下架时间
+        courseDraft.setCoverUrl(courseBaseInfoSaveDTO.getCoverUrl());
+        courseDraft.setPurchaseEndTime(courseBaseInfoSaveDTO.getPurchaseEndTime());
+        //2.3.未上架数据封装，已上架课程不能修改字段
+        if (course == null) {
+            //2.3.1.课程价格
             courseDraft.setPrice(NumberUtils.null2Zero(courseBaseInfoSaveDTO.getPrice()));
-            courseDraft.setMediaDuration(courseBaseInfoSaveDTO.getValidDuration());
-            courseDraft.setStatus(CourseStatus.NO_UP_SHELF.getValue());
+            //2.3.2.课程有效期
+            courseDraft.setValidDuration(courseBaseInfoSaveDTO.getValidDuration());
+            //2.3.3.课程状态
+            courseDraft.setStatus(CourseStatus.NO_UP_SHELF.getStatus());
+            //2.3.4.一级课程分类id
+            courseDraft.setFirstCateId(categoryIdList.get(0));
+            //2.3.5.二级课程分类id
+            courseDraft.setSecondCateId(categoryIdList.get(1));
+            //2.3.6.三级课程分类id
+            courseDraft.setThirdCateId(categoryIdList.get(2));
+            //2.3.7.售卖模式
+            courseDraft.setFree(courseBaseInfoSaveDTO.getFree() ? 1 : 0);
+            //2.3.8.课程名称
+            courseDraft.setName(courseBaseInfoSaveDTO.getName());
         }
 
+        //3.操作
         if (courseBaseInfoSaveDTO.getId() == null) {
-            courseContentDraft.setId(courseDraft.getId());
+            //3.1.新增课程草稿
+            //3.1.1.新生成课程id
+            Long id = IdWorker.getId();
+            //3.1.2.设置课程id
+            courseContentDraft.setId(id);
+            courseDraft.setId(id);
+            //3.1.3.设置课程编辑进度
+            courseDraft.setStep(CourseConstants.CourseStep.BASE_INFO);
+            //3.1.4.插入课程草稿
             baseMapper.insert(courseDraft);
+            //3.1.5.插入课程草稿内容
             courseContentDraftMapper.insert(courseContentDraft);
         } else {
-            courseContentDraft.setId(courseDraft.getId());
+            //3.2.编辑课程草稿
+            //3.2.1.设置课程id
+            courseContentDraft.setId(courseBaseInfoSaveDTO.getId());
+            courseDraft.setId(courseBaseInfoSaveDTO.getId());
+            //3.2.2.更新课程草稿
             baseMapper.updateById(courseDraft);
+            //3.2.3.更新课程草稿内容
             courseContentDraftMapper.updateById(courseContentDraft);
         }
-
-        Course course = courseMapper.selectById(courseDraft.getId());
-        if(course == null) {
-            rabbitMqHelper.send(MqConstants.Exchange.COURSE_EXCHANGE, MqConstants.Key.COURSE_NEW_KEY, courseDraft.getId());
-        }
-
-        return CourseSaveVO.builder().id(courseDraft.getId()).build();
+        //4.返回课程新增dto
+        return CourseSaveVO
+                .builder()
+                .id(courseDraft.getId())
+                .build();
     }
 
     @Override
     public CourseBaseInfoVO getCourseBaseInfo(Long id, Boolean see) {
 
         CourseBaseInfoVO courseBaseInfoVO = null;
-        Long creater = null;
-        if (see) { //查看页面需要先查询正式数据，正式数据没有，再查草稿
+        if (see) {
+            //1.查询课程信息
             Course course = courseMapper.selectById(id);
             if (course != null) {
+                //1.1.查询课程对应的报名购买人数和退款人数
+                CoursePurchaseInfoDTO coursePurchaseInfoDTO = tradeClient.getPurchaseInfoOfCourse(id);
+                //1.2.组装数据
                 courseBaseInfoVO = BeanUtils.toBean(course, CourseBaseInfoVO.class);
+                //1.3.查询课程内容
                 CourseContent courseContent = courseContentMapper.selectById(id);
-                courseBaseInfoVO.setScore(NumberUtils.div(Math.random() * 1 + 4, 1,1)); //todo 评分默认
-                courseBaseInfoVO.setEnrollNum(10); //todo 做完订单再做报名人数
-                courseBaseInfoVO.setStudyNum(10); //todo 做完订单再做学习人数
-                courseBaseInfoVO.setRefundNum(10); //做完退款再做退款人数
-                courseBaseInfoVO.setRealPayAmount(1000); //做完支付再做实付金额
-
-
-
+                //1.4.设置课程评分
+                courseBaseInfoVO.setCoureScore(NumberUtils.div(NumberUtils.null2Zero(course.getScore()) * 1.0, 10, 2));
+                //1.5.设置报名人数
+                courseBaseInfoVO.setEnrollNum(coursePurchaseInfoDTO.getEnrollNum());
+                //1.6.设置学习人数
+                courseBaseInfoVO.setStudyNum(learningClient.countLearningLessonByCourse(id));
+                //1.7.设置退款人数
+                courseBaseInfoVO.setRefundNum(coursePurchaseInfoDTO.getRefundNum());
+                //1.8.设置实付金额
+                courseBaseInfoVO.setRealPayAmount(coursePurchaseInfoDTO.getRealPayAmount());
+                //1.9.设置课程详情
                 courseBaseInfoVO.setDetail(courseContent.getCourseDetail());
+                //1.10.设置课程介绍
                 courseBaseInfoVO.setIntroduce(courseContent.getCourseIntroduce());
+                //1.11.设置课程适用人群
                 courseBaseInfoVO.setUsePeople(courseContent.getUsePeople());
+                //1.12.设置小节总数量
                 courseBaseInfoVO.setCataTotalNum(course.getSectionNum());
-                creater = course.getCreater();
-
-
-            } else {
-                CourseDraft courseDraft = baseMapper.selectById(id);
-                if(courseDraft != null){
-                    courseBaseInfoVO = BeanUtils.toBean(courseDraft, CourseBaseInfoVO.class);
-                    CourseContentDraft courseContentDraft = courseContentDraftMapper.selectById(id);
-                    courseBaseInfoVO.setDetail(courseContentDraft.getCourseDetail());
-                    courseBaseInfoVO.setIntroduce(courseContentDraft.getCourseIntroduce());
-                    courseBaseInfoVO.setUsePeople(courseContentDraft.getUsePeople());
-                    courseBaseInfoVO.setCataTotalNum(courseDraft.getSectionNum());
-                    creater = courseDraft.getCreater();
-                }
-            }
-        } else { //编辑页面使用先查询草稿
-            CourseDraft courseDraft = baseMapper.selectById(id);
-            if (courseDraft != null) {
-                courseBaseInfoVO = BeanUtils.toBean(courseDraft, CourseBaseInfoVO.class);
-                CourseContentDraft courseContentDraft = courseContentDraftMapper.selectById(id);
-                courseBaseInfoVO.setDetail(courseContentDraft.getCourseDetail());
-                courseBaseInfoVO.setIntroduce(courseContentDraft.getCourseIntroduce());
-                courseBaseInfoVO.setUsePeople(courseContentDraft.getUsePeople());
-                creater = courseDraft.getCreater();
             }
         }
+        //2.查询草稿信息
         if (courseBaseInfoVO == null) {
-            return null;
-        }
-        //设置创建人
-        if(creater != null && creater != 0){
-            List<UserDTO> userDTOS = userClient.queryUserByIds(Collections.singletonList(creater));
-            if(CollUtils.isNotEmpty(userDTOS)){
-                courseBaseInfoVO.setCreaterName(userDTOS.get(0).getName());
+            //2.1.查询草稿课程信息
+            CourseDraft courseDraft = baseMapper.selectById(id);
+            //2.2.有草稿课程信息
+            if (courseDraft != null) {
+                //2.3.组装课程信息
+                courseBaseInfoVO = BeanUtils.toBean(courseDraft, CourseBaseInfoVO.class);
+                //2.4.查询课程内容信息
+                CourseContentDraft courseContentDraft = courseContentDraftMapper.selectById(id);
+                //2.5.设置课程详情
+                courseBaseInfoVO.setDetail(courseContentDraft.getCourseDetail());
+                //2.6.设置课程介绍
+                courseBaseInfoVO.setIntroduce(courseContentDraft.getCourseIntroduce());
+                //2.7.适用人群
+                courseBaseInfoVO.setUsePeople(courseContentDraft.getUsePeople());
+                //2.8.课程章节数
+                courseBaseInfoVO.setCataTotalNum(courseDraft.getSectionNum());
+                //2.9.设置课程评分
+                courseBaseInfoVO.setCoureScore(0d);
+                //2.10.设置报名人数
+                courseBaseInfoVO.setEnrollNum(0);
+                //2.11.设置学习人数
+                courseBaseInfoVO.setStudyNum(0);
+                //2.12.设置退款人数
+                courseBaseInfoVO.setRefundNum(0);
+                //2.13.设置实付金额
+                courseBaseInfoVO.setRealPayAmount(0);
             }
         }
-        //分类信息
-        List<Category> categories = categoryService.queryByIds(Arrays.asList(courseBaseInfoVO.getFirstCateId(),
-                courseBaseInfoVO.getSecondCateId(), courseBaseInfoVO.getThirdCateId()));
-        if(CollUtils.isNotEmpty(categories)){
-            //分类id和名称关系
-            Map<Long, String> categoryIdAndName = categories.stream().collect(Collectors.toMap(Category::getId, Category::getName));
+        if(courseBaseInfoVO == null){
+            return new CourseBaseInfoVO();
+        }
+
+        //3.查询创建者，更新者姓名
+        List<UserDTO> userDTOS = userClient.queryUserByIds(
+                Arrays.asList(courseBaseInfoVO.getCreater(), courseBaseInfoVO.getUpdater())
+                        .stream()
+                        .distinct()
+                        .collect(Collectors.toList())
+        );
+        if (CollUtils.isNotEmpty(userDTOS)) {
+            //3.1.创建者，更新至id+name映射关系
+            Map<Long, String> operatorMap = userDTOS
+                    .stream()
+                    .collect(Collectors.toMap(UserDTO::getId, UserDTO::getName));
+            //3.2.设置创建者姓名
+            courseBaseInfoVO.setCreaterName(operatorMap.get(courseBaseInfoVO.getCreater()));
+            //3.3.设置更新者姓名
+            courseBaseInfoVO.setUpdaterName(operatorMap.get(courseBaseInfoVO.getUpdater()));
+        }
+
+        //4.课程分类信息
+        List<Category> categories = categoryService.queryByIds(
+                Arrays.asList(courseBaseInfoVO.getFirstCateId(),
+                        courseBaseInfoVO.getSecondCateId(),
+                        courseBaseInfoVO.getThirdCateId()));
+        if (CollUtils.isNotEmpty(categories)) {
+            //4.1分类id和名称关系
+            Map<Long, String> categoryIdAndName = categories
+                    .stream()
+                    .collect(Collectors.toMap(Category::getId, Category::getName));
+            //4.2.设置课程分类名称
             courseBaseInfoVO.setCateNames(
-                    StringUtils.format("{}/{}/{}", categoryIdAndName.get(courseBaseInfoVO.getFirstCateId()),
-                            categoryIdAndName.get(courseBaseInfoVO.getSecondCateId()), categoryIdAndName.get(courseBaseInfoVO.getThirdCateId()))
+                    StringUtils.format("{}/{}/{}",
+                            categoryIdAndName.get(courseBaseInfoVO.getFirstCateId()),
+                            categoryIdAndName.get(courseBaseInfoVO.getSecondCateId()),
+                            categoryIdAndName.get(courseBaseInfoVO.getThirdCateId()))
             );
         }
         return courseBaseInfoVO;
@@ -262,243 +299,356 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
     public void updateStep(Long id, Integer step) {
         //1.查询课程草稿
         CourseDraft courseDraft = baseMapper.selectById(id);
+        CourseDraft updateCourseDraft = new CourseDraft();
+        updateCourseDraft.setId(id);
+        updateCourseDraft.setCVersion(courseDraft.getCVersion() + 1);
         //2.设置课程步骤，课程步骤只能前进不能后退
-        if(courseDraft.getStep() < step) {
-            courseDraft.setStep(step);
+        if (courseDraft.getStep() < step) {
+            updateCourseDraft.setStep(step);
+        }else {
+            updateCourseDraft.setStep(courseDraft.getStep());
         }
         //3.设置课时数，保存目录和保存题目两部进行修改
-        if(CourseConstants.CourseStep.CATALOGUE == step ||
-                CourseConstants.CourseStep.SUBJECT == step){
-            //题目保存和目录保存都会修改课时数量
-            courseDraft.setSectionNum(courseCatalogueDraftService.totalSectionNums(id));
+        if (CourseConstants.CourseStep.CATALOGUE == step ||
+                CourseConstants.CourseStep.SUBJECT == step) {
+            //3.1题目保存和目录保存都会修改课时数量
+            updateCourseDraft.setSectionNum(courseCatalogueDraftService.totalSectionNums(id));
         }
-        baseMapper.updateById(courseDraft);
+        //4.更新課程狀態
+        baseMapper.updateById(updateCourseDraft);
     }
 
     @Override
-    @GlobalTransactional(rollbackFor = {DbException.class, Exception.class})
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public void upShelf(Long id) {
-        boolean isFirstUpShelf = false;
-        //校验草稿当前是否可以提交
+        // 1.信息获取
+        //1.1获取上架的课程草稿信息
         CourseDraft courseDraft = baseMapper.selectById(id);
+        //1.2获取课程信息
         Course course = courseMapper.selectById(id);
-        if(courseDraft == null && course != null){
-            //课程已经上架，不能重新上架
-            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_AREADY);
-        }
-        if(courseDraft == null){
-            //课程已经不在
-            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_NOT_FOUND_COURSE);
+        boolean isFirstUpShelf = (course == null);
 
-        }
-        //草稿信息不完整
-        if (courseDraft.getStep() != CourseConstants.CourseStep.TEACHER) {
-            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_INFO_INCOMPLETE);
-        }
-        //课程
-        //校验已经上架的课程状态是否已经下架
-        if (course != null && course.getStatus() != CourseStatus.DOWN_SHELF.getValue()) {
-            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_STATE_WRONG);
-        }
-        //首次上架校验逻辑
-        if (course == null) {
-            isFirstUpShelf = true;
-            int sameNameNum = courseMapper.countSameName(courseDraft.getName());
-            if (sameNameNum > 0) {
-                throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_NAME_EXISTS);
-            }
-        }
-        //校验目录数据是否完整， 小节是否上传视频  练习是否上传题目
-        courseCatalogueDraftService.checkCataInfoImplated(id);
+        // 2.校验课程
+        checkBeforeUpShelf(id);
 
-        //计算课程总时长
+        //3.计算每个章节的课时视频时长
         Map<Long, Integer> mediaDurations = courseCatalogueDraftService.calculateMediaDuration(id);
-        int totalMediaDuration = mediaDurations.values().stream().mapToInt(p -> p).sum();
+        //3.1.计算课程视屏总时长
+        int totalMediaDuration = mediaDurations
+                .values()
+                .stream()
+                .mapToInt(p -> p)
+                .sum();
 
 
-        //4.整理数据分别copy或修改,并删除草稿数据
+        //4.草稿信息上架到正式环境
         //4.1课程老师信息
         courseTeacherDraftService.copyToShelf(id, isFirstUpShelf);
         //4.2 题目信息上架
         courseCatalogueDraftService.copySubjectToShelf(id, isFirstUpShelf);
         //4.3目录信息上架
         courseCatalogueDraftService.copyToShelf(id, isFirstUpShelf);
-        //4.4 课程基本信息上架
+        //4.4 组装课程基本信息、课程内容信息
         CourseContentDraft courseContentDraft = courseContentDraftMapper.selectById(id);
         CourseContent courseContent = BeanUtils.toBean(courseContentDraft, CourseContent.class);
         Course courseToShelf = BeanUtils.toBean(courseDraft, Course.class);
-        courseToShelf.setStatus(CourseStatus.SHELF.getValue());
-        courseToShelf.setMediaDuration(totalMediaDuration); //视频总时长
+        //4.4.1.课程视频总时长
+        courseToShelf.setMediaDuration(totalMediaDuration);
+        //4.4.2.课程有效期月数
         courseToShelf.setValidDuration(courseDraft.getValidDuration());
+        //4.4.3.课程发布时间
+        courseToShelf.setPublishTime(DateUtils.now());
+        //4.4.4.课程状态设置为已上架
+        courseToShelf.setStatus(CourseStatus.SHELF.getStatus());
+        //4.4.5.课程发布次数
+        int publishTimes = (course == null) ?
+                1 : NumberUtils.null2Zero(course.getPublishTimes()) + 1;
+        courseToShelf.setPublishTimes(publishTimes);
+        // 4.4.6.评分
+        courseToShelf.setScore((int)(Math.random() * 10) + 40);
 
+        //4.5.首次上架
         if (isFirstUpShelf) {
+            //4.5.1.插入课程内容信息
             int result = courseContentMapper.insert(courseContent);
             if (result <= 0) {
                 throw new DbException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
             }
-            //还未统计每章的数据
+            //4.5.2.插入课程基本信息
             result = courseMapper.insert(courseToShelf);
             if (result <= 0) {
                 throw new DbException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
             }
+            //4.5.1.删除课程草稿基本信息
             baseMapper.deleteById(id);
+            //4.5.2.删除课程草稿内容信息
             courseContentDraftMapper.deleteById(id);
         } else {
+            //4.6.再次上架
+            //4.6.1.更新正式课程内容信息
             int result = courseContentMapper.updateById(courseContent);
             if (result <= 0) {
                 throw new DbException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
             }
-            //还未统计每章的数据
+            //4.6.2.更新正式课程基本信息
             result = courseMapper.updateVariableById(courseToShelf);
             if (result <= 0) {
                 throw new DbException(ErrorInfo.Msg.DB_UPDATE_EXCEPTION);
             }
+            //4.6.3.删除课程草稿基本信息
             baseMapper.deleteById(id);
+            //4.6.4.删除课程草稿内容信息
             courseContentDraftMapper.deleteById(id);
 
         }
-        //上架mq广播
-        rabbitMqHelper.send(MqConstants.Exchange.COURSE_EXCHANGE, MqConstants.Key.COURSE_UP_KEY, id);
+        //5.课程上架mq
+        rabbitMqHelper.sendAsyn(MqConstants.Exchange.COURSE_EXCHANGE,
+                MqConstants.Key.COURSE_UP_KEY,
+                id,
+                200L);
     }
 
     @Override
-    @Transactional(rollbackFor = {DbException.class, Exception.class})
+    public void checkBeforeUpShelf(Long id) {
+        //1.获取上架的课程草稿信息
+        CourseDraft courseDraft = baseMapper.selectById(id);
+        //1.1.获取课程信息
+        Course course = courseMapper.selectById(id);
+        //2.课程校验
+        //2.1.课程上架幂等校验
+        if (courseDraft == null && course != null) {
+            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_AREADY);
+        }
+        //2.2.课程id不存在的课程无法上架
+        if (courseDraft == null && course == null) {
+            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_NOT_FOUND_COURSE);
+
+        }
+        //2.3.草稿信息不完整无法上架
+        if (courseDraft.getStep() != CourseConstants.CourseStep.TEACHER) {
+            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_INFO_INCOMPLETE);
+        }
+        //课程
+        //2.4.已上架/已完结课程不能上架
+        if (course != null && course.getStatus() != CourseStatus.DOWN_SHELF.getStatus()) {
+            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_STATE_WRONG);
+        }
+        //2.5.校验课程结束时间
+        if(courseDraft.getPurchaseEndTime().isBefore(DateUtils.now())){
+            throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_UP_SHELF_PURCHASE_ILLEGAL);
+        }
+        //2.6.首次上架校验逻辑
+        if (course == null) {
+            //2.5.1.统计同名的课程数量
+            int sameNameNum = courseMapper.countSameName(courseDraft.getName());
+            //2.5.2.有同名课程不能上架
+            if (sameNameNum > 0) {
+                throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_NAME_EXISTS);
+            }
+        }
+        //2.7.校验课程目录
+        courseCatalogueDraftService.checkCataInfoImplated(id);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public void downShelf(Long id) {
+        //1.查询课程基本信息
         Course course = courseService.getById(id);
-        if (course == null || !course.getStatus().equals(CourseStatus.SHELF.getValue())) {
+        //1.1课程状态判断
+        if (course == null || !course.getStatus().equals(CourseStatus.SHELF.getStatus())) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_DOWN_SHELF_FAILD);
         }
-        // 先更新课程状态
-        courseService.updateStatus(id, CourseStatus.DOWN_SHELF.getValue());
-        //1.课程基本信息和内容信息copy到草稿中
+        //2.先更新课程状态
+        courseService.updateStatus(id, CourseStatus.DOWN_SHELF.getStatus());
+        //3.课程基本信息和内容信息copy到草稿中
         baseMapper.insertFromCourse(id);
-        //2.课程内容copy到草稿中
+        //4.课程内容copy到草稿中
         courseContentDraftMapper.insertFromCourseContent(id);
-        //3.目录内容copy到草稿中
+        //5.目录内容copy到草稿中
         courseCatalogueDraftMapper.insertFromCourseCatalogue(id);
-        //4.课程题目copy到草稿中
-        copySubject2Draft(id);
-        // courseCataSubjectDraftMapper.insertFromCourseCataSubject(id);
-        //5.课程老师copy到草稿中
+        //6.课程题目copy到草稿中
+        courseCataSubjectDraftMapper.insertFromCourseCataSubject(id);
+        //7.课程老师copy到草稿中
         courseTeacherDraftMapper.insertFromCourseTeacher(id);
-        //下架mq广播
+        //8.下架mq广播
         rabbitMqHelper.send(MqConstants.Exchange.COURSE_EXCHANGE, MqConstants.Key.COURSE_DOWN_KEY, id);
     }
 
-    @GlobalTransactional
-    public void copySubject2Draft(Long courseId) {
-        // 1.查询课程有关的小节信息
-        List<Long> sectionIds = courseCatalogueDraftMapper.getSectionIdByCourseId(courseId);
-        // 2.查询题目关系
-        List<QuestionBizDTO> qbs = examClient.queryQuestionIdsByBizIds(sectionIds);
-        if (CollUtils.isEmpty(qbs)) {
-            return;
-        }
-        List<CourseCataSubjectDraft> list = qbs.stream().map(q -> new CourseCataSubjectDraft()
-                .setCourseId(courseId).setCataId(q.getBizId()).setSubjectId(q.getQuestionId())
-        ).collect(Collectors.toList());
-        // 3.保存到草稿表
-        courseCataSubjectDraftMapper.batchInsert(list);
-    }
-
     @Override
-    public CourseSearchDTO getCourseDTOById(Long id) {
-
+    public CourseDTO getCourseDTOById(Long id) {
+        //1.查询课程草稿基础信息
         CourseDraft courseDraft = baseMapper.selectById(id);
+        //1.1.判空
         if (courseDraft == null) {
-            return new CourseSearchDTO();
+            return new CourseDTO();
         }
-        LambdaQueryWrapper<CourseTeacherDraft> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(CourseTeacherDraft::getCourseId, id)
-                .orderByDesc(CourseTeacherDraft::getCIndex)
+        //2.查询课程老师列表，并去序号的第一个
+        LambdaQueryWrapper<CourseTeacherDraft> queryWrapper =
+                Wrappers.lambdaQuery(CourseTeacherDraft.class)
+                .eq(CourseTeacherDraft::getCourseId, id)
+                .orderBy(true, false, CourseTeacherDraft::getCIndex)
                 .last(true, "limit 1");
-        List<CourseTeacherDraft> courseTeacherDrafts = courseTeacherDraftMapper.selectList(queryWrapper);
-        CourseSearchDTO courseSearchDTO = BeanUtils.toBean(courseDraft, CourseSearchDTO.class);
-        courseSearchDTO.setCategoryIdLv1(courseDraft.getFirstCateId()); //一级分类id
-        courseSearchDTO.setCategoryIdLv2(courseDraft.getSecondCateId()); //二级分类id
-        courseSearchDTO.setCategoryIdLv3(courseDraft.getThirdCateId()); //三级分类id
-        courseSearchDTO.setPublishTime(courseDraft.getCreateTime()); //创建时间
-        courseSearchDTO.setSections(courseDraft.getSectionNum()); //小节或练习数量
-        if (CollUtils.isNotEmpty(courseTeacherDrafts)) {
-            courseSearchDTO.setTeacher(courseTeacherDrafts.get(0).getTeacherId());
-        }else {
-            courseSearchDTO.setTeacher(0L);
+        //2.1.查询课程老师信息
+        CourseTeacherDraft courseTeacherDraft = courseTeacherDraftMapper.selectOne(queryWrapper);
+        //3.组装数据
+        CourseDTO courseDTO = BeanUtils.toBean(courseDraft, CourseDTO.class);
+        //3.1.设置课程分类，一级、二级、三级课程分类
+        courseDTO.setCategoryIdLv1(courseDraft.getFirstCateId());
+        courseDTO.setCategoryIdLv2(courseDraft.getSecondCateId());
+        courseDTO.setCategoryIdLv3(courseDraft.getThirdCateId());
+        //3.2.设置课程视频播放总时长
+        courseDTO.setDuration(courseDraft.getMediaDuration());
+        //3.3.设置课程总小节数
+        courseDTO.setSections(courseDraft.getSectionNum());
+        //3.4.设置课程教师id
+        if (courseTeacherDraft != null) {
+            courseDTO.setTeacher(courseTeacherDraft.getTeacherId());
+        } else {
+            courseDTO.setTeacher(0L);
         }
 
-        return courseSearchDTO;
+        return courseDTO;
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public void delete(Long id) {
-        //删除课程草稿
+        //1.删除课程草稿
         baseMapper.deleteById(id);
-        //删除课程内容草稿
+        //2.删除课程内容草稿
         courseContentDraftMapper.deleteById(id);
-        //删除课程题目关系草稿
+        //3.删除课程题目关系草稿
         courseCataSubjectDraftMapper.deleteByCourseId(id);
-        //删除课程目录草稿
+        //4.删除课程目录草稿
         courseCatalogueDraftMapper.deleteByCourseId(id, Arrays.asList(
                 CourseConstants.CataType.CHAPTER,
                 CourseConstants.CataType.SECTION,
                 CourseConstants.CataType.PRATICE
         ));
-        //删除课程老师关系草稿
+        //5.删除课程老师关系草稿
         courseTeacherDraftMapper.deleteByCourseId(id);
     }
 
     @Override
     public PageDTO<CoursePageVO> queryForPage(CoursePageQuery coursePageQuery) {
-        //转换成查询条件
-        LambdaQueryWrapper<CourseDraft> queryWrapper = SqlWrapperUtils.
-                toLambdaQueryWrapper(coursePageQuery, CourseDraft.class);
-        //课程更新时间查询条件
-        queryWrapper.between(ObjectUtils.isNotEmpty(coursePageQuery.getBeginTime()) &&
-                        ObjectUtils.isNotEmpty(coursePageQuery.getEndTime()), CourseDraft::getUpdateTime,
-                coursePageQuery.getBeginTime(), coursePageQuery.getEndTime());
-        //搜索关键字课程名称
+        //1.课程草稿分页查询条件
+        LambdaQueryWrapper<CourseDraft> queryWrapper =
+                SqlWrapperUtils.toLambdaQueryWrapper(coursePageQuery, CourseDraft.class);
+        //1.1课程查询条件-更新时间
+        queryWrapper.between(
+                ObjectUtils.isNotEmpty(coursePageQuery.getBeginTime()) &&
+                        ObjectUtils.isNotEmpty(coursePageQuery.getEndTime()),
+                CourseDraft::getUpdateTime,
+                coursePageQuery.getBeginTime(),
+                coursePageQuery.getEndTime());
+        //1.2课程查询条件-搜索关键字
         queryWrapper.like(StringUtils.isNotEmpty(coursePageQuery.getKeyword()),
                 CourseDraft::getName, coursePageQuery.getKeyword());
+        //1.3.分页查询查询数据
         Page<CourseDraft> page = page(coursePageQuery.toMpPage(), queryWrapper);
+        //1.4.分页查询结果判空
         if (CollUtils.isEmpty(page.getRecords())) {
             return PageDTO.empty(page);
         }
-        //更新人
+        //2.组装数据查询
+        //2.1.课程更新人id列表
         List<Long> updaterList = page.getRecords().stream()
                 .map(CourseDraft::getUpdater)
                 .collect(Collectors.toList());
-        //查询更新人用户信息
+        //2.2.查询更新人用户信息
         List<UserDTO> userDTOS = userClient.queryUserByIds(updaterList);
-        Map<Long, String> updaterMap = CollUtils.isEmpty(updaterList) ? new HashMap<>()
-                : userDTOS.stream().collect(Collectors.toMap(UserDTO::getId, UserDTO::getName));
-        //课程分类
+        //2.3.转化更新人用户id+name 映射关系
+        Map<Long, String> updaterMap =
+                CollUtils.isEmpty(updaterList) ?
+                        new HashMap<>() : userDTOS.stream().collect(Collectors.toMap(UserDTO::getId, UserDTO::getName));
+        //2.4.查询课程分类列表
         List<Category> list = categoryService.list();
-        Map<Long, String> categoryNameMap = CollUtils.isEmpty(list) ? new HashMap<>()
-                : list.stream().collect(Collectors.toMap(Category::getId, Category::getName));
-        //课程id列表
-        List<Long> courseIdList = page.getRecords().stream()
-                .map(CourseDraft::getId)
-                .collect(Collectors.toList());
-        //统计课程报名人数map
+        //2.5.转化课程分类id+name映射关系
+        Map<Long, String> categoryNameMap =
+                CollUtils.isEmpty(list) ?
+                        new HashMap<>() : list.stream().collect(Collectors.toMap(Category::getId, Category::getName));
+        //2.6.课程id列表
+        List<Long> courseIdList = page.getRecords().stream().map(CourseDraft::getId).collect(Collectors.toList());
+        //2.7.统计课程报名人数map
         Map<Long, Integer> peoNumOfCourseMap = tradeClient.countEnrollNumOfCourse(courseIdList);
-
+        //3.数据封装
         return PageDTO.of(page, CoursePageVO.class, (course, coursePageVO) -> {
-            //课程所属分类
+            //3.1.拼接课程分类
             String categories = StringUtils.format("{}/{}/{}",
                     categoryNameMap.get(course.getFirstCateId()),
                     categoryNameMap.get(course.getSecondCateId()),
                     categoryNameMap.get(course.getThirdCateId()));
+            //3.2.设置课程分类
             coursePageVO.setCategories(categories);
-            //更新人
+            //3.3.设置课程更新人
             coursePageVO.setUpdaterName(updaterMap.get(course.getUpdater()));
-            //报名人数
+            //3.4.设置课程报名人数
             coursePageVO.setSold(NumberUtils.null2Zero(peoNumOfCourseMap.get(course.getId())));
-            //评分 已下架的才有评分，待上架没有评分，临时使用 todo
-            if(CourseStatus.DOWN_SHELF.equalsValue(coursePageQuery.getStatus())){
-                coursePageVO.setScore(40 + course.getSectionNum() % 5); //临时使用 todo
-            }
-            // 课时
+            //3.5.设置课程总课时数
             coursePageVO.setSections(course.getSectionNum());
         });
+    }
+
+    @Override
+    public NameExistVO checkName(String name, Long id) {
+        //1.课程草稿同名查询条件
+        LambdaQueryWrapper<CourseDraft> queryWrapper =
+                Wrappers.lambdaQuery(CourseDraft.class)
+                        .eq(CourseDraft::getName, name)
+                        .last(id != null, " and id !=" + id);
+        //2.统计同名课程数量
+        Integer num = baseMapper.selectCount(queryWrapper);
+        //3.返回同名课程VO
+        return new NameExistVO(num > 0);
+    }
+
+    @Override
+    public List<Long> queryExists(List<Long> idList) {
+        //1.查询草稿课程基础信息列表
+        List<CourseDraft> courses = baseMapper.selectBatchIds(idList);
+        //1.1.草稿课程信息列表判空
+        if (CollUtils.isEmpty(courses)) {
+            return null;
+        }
+        //2.组装数据
+        return courses.stream()
+                .map(CourseDraft::getId)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<Long, Integer> countCourseNumOfCategory() {
+        //1.查询所有课程草稿
+        List<CourseDraft> courses = baseMapper.selectList(null);
+        Map<Long, Integer> cateIdAndNumMap = new HashMap<>();
+        //2.遍历统计每个课程分类拥有的课程数量
+        for (CourseDraft course : courses) {
+            //2.1.统计一级课程分类课程数量
+            Integer firstCateNum = cateIdAndNumMap.get(course.getFirstCateId());
+            cateIdAndNumMap.put(course.getFirstCateId(), firstCateNum == null ? 1 : firstCateNum + 1);
+            //2.2.统计二级课程分类课程数量
+            Integer secondCateNum = cateIdAndNumMap.get(course.getSecondCateId());
+            cateIdAndNumMap.put(course.getSecondCateId(), secondCateNum == null ? 1 : secondCateNum + 1);
+            //2.3.统计三级课程分类课程数量
+            Integer thirdCateNum = cateIdAndNumMap.get(course.getThirdCateId());
+            cateIdAndNumMap.put(course.getThirdCateId(), thirdCateNum == null ? 1 : thirdCateNum + 1);
+        }
+        return cateIdAndNumMap;
+    }
+
+    private void checkSameCourse(Long id, String name) {
+        //1.查询正式环境是否有同名课程
+        int countSameNameNum = courseMapper.countSameName(name);
+        //1.1.同名课程数据判0
+        if (countSameNameNum > 0) { //名称已经存在，提交时做双重校验
+            throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_NAME_EXISTS);
+        }
+        //2.查询正式环境是否有同名课程
+        countSameNameNum = baseMapper.countByNameAndId(name, id);
+        //2.1.同名课程数据判0
+        if (countSameNameNum > 0) {
+            throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_NAME_EXISTS);
+        }
     }
 }

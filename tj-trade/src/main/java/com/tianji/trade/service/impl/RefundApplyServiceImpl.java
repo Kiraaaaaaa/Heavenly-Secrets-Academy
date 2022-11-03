@@ -129,6 +129,7 @@ public class RefundApplyServiceImpl extends ServiceImpl<RefundApplyMapper, Refun
         refundApply.setUserId(detail.getUserId()); //退款订单所属人
         refundApply.setRefundAmount(detail.getRealPayAmount()); //退款金额
         refundApply.setRefundReason(refundFormDTO.getRefundReason()); //退款原因
+        refundApply.setQuestionDesc(refundFormDTO.getQuestionDesc()); //退款问题说明
         refundApply.setCreater(userId); //申请id
         if (isStudent) {
             refundApply.setMessage("用户申请退款");
@@ -495,7 +496,7 @@ public class RefundApplyServiceImpl extends ServiceImpl<RefundApplyMapper, Refun
         RefundResultDTO result = payClient.queryRefundResult(refundApply.getId());
         if (result == null) {
             // 退款数据不存在，放弃处理
-            return true;
+            return false;
         }
         // 3.处理退款结果
         handleRefundResult(result);

@@ -1,11 +1,11 @@
 package com.tianji.course.domain.vo;
 
 import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -15,18 +15,14 @@ import java.util.List;
  * @version 1.0.0
  **/
 @Data
+@Builder
 @AllArgsConstructor
-@NotNull
+@NoArgsConstructor
 @ApiModel(description = "所有课程分类数据")
 public class SimpleCategoryVO {
-    @ApiModelProperty("id")
     private Long id;
-    @ApiModelProperty("分类名称")
     private String name;
-    @ApiModelProperty("子分类")
     private List<SimpleCategoryVO> children;
-    @ApiModelProperty("分类层级")
     private Integer level;
-    @ApiModelProperty("父分类id")
     private Long parentId;
 }

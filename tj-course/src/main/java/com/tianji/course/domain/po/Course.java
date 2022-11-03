@@ -1,7 +1,5 @@
 package com.tianji.course.domain.po;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -82,7 +80,7 @@ public class Course implements Serializable {
     private String templateUrl;
 
     /**
-     * 课程状态，1：待上架，1：已上架，2：下架，3：已完结
+     * 课程状态，1：待上架，2：已上架，3：下架，4：已完结
      */
     private Integer status;
 
@@ -100,6 +98,11 @@ public class Course implements Serializable {
      * 信息填写进度
      */
     private Integer step;
+
+    /**
+     * 课程评价得分，45代表4.5星
+     */
+    private Integer score;
 
     /**
      * 课程总时长
@@ -134,7 +137,6 @@ public class Course implements Serializable {
     /**
      * 创建时间
      */
-
     private LocalDateTime createTime;
 
     /**
@@ -145,13 +147,11 @@ public class Course implements Serializable {
     /**
      * 创建人
      */
-
     private Long creater;
 
     /**
      * 更新人
      */
-
     private Long updater;
 
     /**

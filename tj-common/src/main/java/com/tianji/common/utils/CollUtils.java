@@ -5,6 +5,7 @@ import cn.hutool.core.collection.IterUtil;
 import com.tianji.common.validate.Checker;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -99,5 +100,43 @@ public class CollUtils extends CollectionUtil {
         for (T t : data){
             t.check();
         }
+    }
+
+    /**
+     * 将元素加入到集合中，为null的过滤掉
+     *
+     * @param list 集合
+     * @param data 要添加的数据
+     * @param <T> 元素类型
+     */
+    public static <T> void add(Collection<T> list, T... data) {
+        if (list == null || ArrayUtils.isEmpty(data)) {
+            return;
+        }
+        for (T t : data) {
+            if (ObjectUtils.isNotEmpty(t)) {
+                list.add(t);
+            }
+        }
+    }
+    //将两个集合出现次数相加
+    public static Map<Long, Integer> union(Map<Long, Integer> map1, Map<Long, Integer> map2) {
+        if (CollUtils.isEmpty(map1)) {
+            return map2;
+        } else if (CollUtils.isEmpty(map2)) {
+            return map1;
+        }
+        for (Map.Entry<Long, Integer> entry : map1.entrySet()) {
+            Integer num = map2.get(entry.getKey());
+            map2.put(entry.getKey(), NumberUtils.null2Zero(num) + entry.getValue());
+        }
+        return map2;
+    }
+
+    public static <T,R> R getFiledOfFirst(List<T> list, Function<T, R> function) {
+        if (CollUtils.isEmpty(list)) {
+            return null;
+        }
+        return function.apply(list.get(0));
     }
 }

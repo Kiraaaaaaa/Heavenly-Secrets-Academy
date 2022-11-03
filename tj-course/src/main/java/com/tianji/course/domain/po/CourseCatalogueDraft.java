@@ -1,12 +1,7 @@
 package com.tianji.course.domain.po;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
@@ -26,6 +21,7 @@ import java.time.LocalDateTime;
 @TableName("course_catalogue_draft")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class CourseCatalogueDraft implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -139,13 +135,11 @@ public class CourseCatalogueDraft implements Serializable {
     /**
      * 创建人
      */
-
     private Long creater;
 
     /**
      * 更新人
      */
-
     private Long updater;
 
     /**

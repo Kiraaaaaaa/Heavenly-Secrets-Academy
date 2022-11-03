@@ -1,7 +1,5 @@
 package com.tianji.course.domain.po;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -65,13 +63,11 @@ public class CourseContentDraft implements Serializable {
     /**
      * 创建人
      */
-
     private Long creater;
 
     /**
      * 更新人
      */
-
     private Long updater;
 
     /**

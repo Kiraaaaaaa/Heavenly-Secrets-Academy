@@ -1,14 +1,18 @@
 package com.tianji.course.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.tianji.api.dto.course.CourseSearchDTO;
+import com.tianji.api.dto.course.CourseDTO;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.course.domain.dto.CourseBaseInfoSaveDTO;
+import com.tianji.course.domain.dto.CoursePageQuery;
 import com.tianji.course.domain.po.CourseDraft;
-import com.tianji.course.domain.query.CoursePageQuery;
 import com.tianji.course.domain.vo.CourseBaseInfoVO;
 import com.tianji.course.domain.vo.CoursePageVO;
 import com.tianji.course.domain.vo.CourseSaveVO;
+import com.tianji.course.domain.vo.NameExistVO;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -50,6 +54,8 @@ public interface ICourseDraftService extends IService<CourseDraft> {
      */
     void upShelf(Long id);
 
+    void checkBeforeUpShelf(Long id);
+
     /**
      * 课程下架
      *
@@ -62,7 +68,7 @@ public interface ICourseDraftService extends IService<CourseDraft> {
      * @param id 课程id
      * @return 课程数据
      */
-    CourseSearchDTO getCourseDTOById(Long id);
+    CourseDTO getCourseDTOById(Long id);
 
     /**
      * 删除课程的草稿
@@ -78,4 +84,23 @@ public interface ICourseDraftService extends IService<CourseDraft> {
      */
     PageDTO<CoursePageVO> queryForPage(CoursePageQuery coursePageQuery);
 
+    /**
+     * 校验名称是否存在，或者被其他课程占用
+     * @param name 课程名称
+     * @param id 当前课程名称
+     */
+    NameExistVO checkName(String name, Long id);
+
+    /**
+     * 查询课程id列表中存在的id
+     * @param idList
+     * @return
+     */
+    List<Long> queryExists(List<Long> idList);
+
+    /**
+     * 统计草稿中的课程分类拥有的课程数量
+     * @return
+     */
+    Map<Long, Integer> countCourseNumOfCategory();
 }

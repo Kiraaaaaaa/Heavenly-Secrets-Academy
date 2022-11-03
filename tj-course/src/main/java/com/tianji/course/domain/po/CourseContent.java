@@ -1,8 +1,5 @@
 package com.tianji.course.domain.po;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -55,13 +52,11 @@ public class CourseContent implements Serializable {
     /**
      * 创建时间
      */
-
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
-
     private LocalDateTime updateTime;
 
     /**
@@ -77,7 +72,6 @@ public class CourseContent implements Serializable {
     /**
      * 逻辑删除
      */
-    @TableLogic(delval = "0")
     private Integer deleted;
 
 

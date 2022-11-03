@@ -2,9 +2,9 @@ package com.tianji.api.dto.course;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
 
 /**
  * 课程支付相关信息 课程状态
@@ -14,21 +14,13 @@ import java.time.LocalDateTime;
  **/
 @Data
 @ApiModel("课程购买信息")
+@NoArgsConstructor
+@AllArgsConstructor
 public class CoursePurchaseInfoDTO {
-    @ApiModelProperty("课程id")
-    private Long id;
-    @ApiModelProperty("课程购买开始时间")
-    private LocalDateTime purchaseStartTime;
-    @ApiModelProperty("课程购买结束时间")
-    private LocalDateTime purchaseEndTime;
-    @ApiModelProperty("付费方式，是否支持免费")
-    private Boolean free;
-    @ApiModelProperty("价格")
-    private Integer price;
-    @ApiModelProperty("课程名称")
-    private String name;
-    @ApiModelProperty("课程封面")
-    private String coverUrl;
-    @ApiModelProperty("课程学习有效期")
-    private Integer validDuration;
+    @ApiModelProperty("报名人数")
+    private Integer enrollNum;
+    @ApiModelProperty("退款人数")
+    private Integer refundNum;
+    @ApiModelProperty("实付总金额")
+    private Integer realPayAmount;
 }

@@ -15,4 +15,7 @@ public class RefundFormDTO {
     @ApiModelProperty("退款原因")
     @NotNull(message = "请选择退款原因")
     private String refundReason;
+    @ApiModelProperty("问题说明")
+    @NotNull(message = "问题说明不能为空")
+    private String questionDesc;
 }

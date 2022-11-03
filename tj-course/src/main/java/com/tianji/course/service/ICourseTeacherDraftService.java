@@ -1,8 +1,8 @@
 package com.tianji.course.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.tianji.course.domain.dto.CourseTeacherSaveDTO;
 import com.tianji.course.domain.po.CourseTeacherDraft;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.tianji.course.domain.vo.CourseTeacherVO;
 
 import java.util.List;
@@ -38,10 +38,4 @@ public interface ICourseTeacherDraftService extends IService<CourseTeacherDraft>
      */
     void copyToShelf(Long courseId, Boolean isFirstShelf);
 
-    /**
-     * 将已上架的老师信息下载到草稿中
-     *
-     * @param courseId 课程id
-     */
-    void copyToDraft(Long courseId);
 }

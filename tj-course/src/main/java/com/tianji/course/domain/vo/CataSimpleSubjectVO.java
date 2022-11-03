@@ -1,6 +1,5 @@
 package com.tianji.course.domain.vo;
 
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,7 +15,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "小节及题目")
 public class CataSimpleSubjectVO {
     @ApiModelProperty("小节或练习id")
     private Long cataId;

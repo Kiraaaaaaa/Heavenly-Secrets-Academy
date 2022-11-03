@@ -18,9 +18,9 @@ import java.util.Map;
  * 内部服务接口调用
  *
  * @ClassName CourseInfoController
- * @author wusongsong
- * @since 2022/7/18 15:19
- * @version 1.0.0
+ * @Author wusongsong
+ * @Date 2022/7/18 15:19
+ * @Version
  **/
 @RestController
 @RequestMapping("course")
@@ -71,7 +71,7 @@ public class CourseInfoController {
 
     @GetMapping("/{id}/searchInfo")
     @ApiOperation("课程上架时，需要查询课程信息，加入索引库")
-    public CourseSearchDTO getSearchInfo(@ApiParam("课程id") @PathVariable("id") Long id) {
+    public CourseDTO getSearchInfo(@ApiParam("课程id") @PathVariable("id") Long id) {
         return courseService.getCourseDTOById(id);
     }
 
@@ -94,5 +94,10 @@ public class CourseInfoController {
     @ApiIgnore
     public Map<Long, String> queryByThirdCateIds(@RequestParam("thirdCateIdList") List<Long> thirdCateIdList) {
         return categoryService.queryByThirdCateIds(thirdCateIdList);
+    }
+
+    @GetMapping("/name")
+    public List<Long> queryCoursesIdByName(@RequestParam("name") String name){
+        return courseService.queryCourseIdByName(name);
     }
 }

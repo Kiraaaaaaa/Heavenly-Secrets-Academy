@@ -24,4 +24,6 @@ public class CataSimpleInfoVO {
     private String index;
     @ApiModelProperty("数字序号，不包含章序号")
     private Integer cIndex;
+    @ApiModelProperty("数字序号章序号")
+    private Integer chapterIndex;
 }

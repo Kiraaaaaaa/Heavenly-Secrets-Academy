@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @ClassName CourseProperties
- * @author wusongsong
- * @since 2022/7/20 9:13
- * @version 1.0.0
+ * @Author wusongsong
+ * @Date 2022/7/20 9:13
+ * @Version
  **/
 @Data
 @Configuration

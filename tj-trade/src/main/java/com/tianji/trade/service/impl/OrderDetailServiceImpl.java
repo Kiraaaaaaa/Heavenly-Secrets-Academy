@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.cache.RoleCache;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.IdAndNumDTO;
+import com.tianji.api.dto.course.CoursePurchaseInfoDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.constants.ErrorInfo;
 import com.tianji.common.domain.dto.PageDTO;
@@ -171,8 +172,8 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
         vo.setMessage(order.getMessage());
         vo.setPayChannel(PayChannel.desc(order.getPayChannel()));
         // 5.1.订单流水信息
+        vo.setPayOrderNo(order.getPayOrderNo());
         if (refundApply != null) {
-            vo.setPayOrderNo(order.getPayOrderNo());
             vo.setRefundOrderNo(refundApply.getRefundOrderNo());
             vo.setRefundChannel(RefundChannelEnum.desc(refundApply.getRefundChannel()));
             vo.setFailedReason(refundApply.getFailedReason());
@@ -188,7 +189,7 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
             vo.setRefundProposerName(userMap.get(refundApply.getCreater()).getName());
             vo.setRefundReason(refundApply.getRefundReason());
             vo.setRemark(refundApply.getRemark());
-            vo.setMessage(refundApply.getMessage());
+            vo.setRefundMessage(refundApply.getMessage());
         }
 
         // 5.4.课程有效期
@@ -225,10 +226,10 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
         list.add(new OrderProgressNodeVO(OrderStatus.CLOSED.getProgressName(), order.getCloseTime()));
         // 1.4.交易完成时间
         list.add(new OrderProgressNodeVO(FINISHED.getProgressName(), order.getFinishTime()));
-        if(refundApply == null) {
+        if (refundApply == null) {
             // 1.5.没有退款参数情况下，默认是用户端查询，添加退款成功时间字段
             list.add(new OrderProgressNodeVO(OrderStatus.REFUNDED.getProgressName(), order.getRefundTime()));
-        }else{
+        } else {
             // 2.再填充订单退款的每个节点的时间值
             // 2.1.订单申请退款
             list.add(new OrderProgressNodeVO(RefundStatus.UN_APPROVE.getProgressName(), refundApply.getCreateTime()));
@@ -319,5 +320,23 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
 
         // 3.转换返回
         return IdAndNumDTO.toMap(list);
+    }
+
+    @Override
+    public CoursePurchaseInfoDTO getPurchaseInfoOfCourse(Long courseId) {
+        // 1.统计报名人数
+        Integer enrollNum = lambdaQuery()
+                .eq(OrderDetail::getCourseId, courseId)
+                .in(OrderDetail::getStatus, PAYED.getValue(), FINISHED.getValue(), ENROLLED.getValue())
+                .count();
+        // 2.统计退款人数
+        Integer refundNum = lambdaQuery()
+                .eq(OrderDetail::getCourseId, courseId)
+                .eq(OrderDetail::getStatus, REFUNDED.getValue())
+                .count();
+        // 3.统计销售额
+        int realPayAmount = baseMapper.countRealPayAmountByCourseId(courseId);
+
+        return new CoursePurchaseInfoDTO(enrollNum, refundNum, realPayAmount);
     }
 }

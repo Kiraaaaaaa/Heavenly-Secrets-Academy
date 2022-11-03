@@ -1,6 +1,7 @@
 package com.tianji.api.client.trade;
 
 import com.tianji.api.client.trade.fallback.TradeClientFallback;
+import com.tianji.api.dto.course.CoursePurchaseInfoDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,4 +36,11 @@ public interface TradeClient {
     @GetMapping("/order-details/course/{id}")
     Boolean checkMyLesson(@PathVariable("id") Long id);
 
+    /**
+     * 统计课程购买、退款状态
+     * @param courseId 课程id
+     * @return 统计结果
+     */
+    @GetMapping("/order-details/purchaseInfo")
+    CoursePurchaseInfoDTO getPurchaseInfoOfCourse(@RequestParam("courseId") Long courseId);
 }

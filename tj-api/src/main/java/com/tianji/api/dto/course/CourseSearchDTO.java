@@ -36,6 +36,8 @@ public class CourseSearchDTO {
     private LocalDateTime publishTime;
     @ApiModelProperty("章节数")
     private Integer sections;
+    @ApiModelProperty("课程时长")
+    private Integer duration;
     @ApiModelProperty("老师id")
     private Long teacher;
     @ApiModelProperty("课程类型，1：直播课程，2：录播课程")

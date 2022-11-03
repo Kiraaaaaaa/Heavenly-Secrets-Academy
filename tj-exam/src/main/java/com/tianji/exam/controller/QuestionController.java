@@ -79,4 +79,16 @@ public class QuestionController {
             @ApiParam("要查询的老师的集合") @RequestParam("ids") List<Long> createrIds){
         return questionService.countQuestionNumOfCreater(createrIds);
     }
+
+    @ApiOperation("查询业务关联的题目列表")
+    @GetMapping("listOfBiz")
+    public List<QuestionDTO> queryQuestionByBizId(@ApiParam("要查询的题目的id集合") @RequestParam("bizId") Long bizId){
+        return questionService.queryQuestionByBizId(bizId);
+    }
+
+    @ApiOperation("校验名称是否有效，存在则无效返回false，不存在返回true")
+    @GetMapping("/checkName")
+    public Boolean checkNameValid(@RequestParam("name") String name){
+        return questionService.checkNameValid(name);
+    }
 }

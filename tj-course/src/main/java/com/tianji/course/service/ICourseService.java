@@ -1,16 +1,13 @@
 package com.tianji.course.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.tianji.api.dto.course.CourseFullInfoDTO;
-import com.tianji.api.dto.course.CourseSearchDTO;
-import com.tianji.api.dto.course.CourseSimpleInfoDTO;
-import com.tianji.api.dto.course.SubNumAndCourseNumDTO;
+import com.tianji.api.dto.course.*;
 import com.tianji.common.domain.dto.PageDTO;
+import com.tianji.course.domain.dto.CoursePageQuery;
 import com.tianji.course.domain.dto.CourseSimpleInfoListDTO;
 import com.tianji.course.domain.po.Course;
-import com.tianji.course.domain.query.CoursePageQuery;
-import com.tianji.course.domain.vo.CourseAndSectionVO;
 import com.tianji.course.domain.vo.CoursePageVO;
+import com.tianji.course.domain.vo.NameExistVO;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +30,7 @@ public interface ICourseService extends IService<Course> {
      */
     void updateStatus(Long id, Integer status);
 
-    CourseSearchDTO getCourseDTOById(Long id);
+    CourseDTO getCourseDTOById(Long id);
 
 
     void delete(Long id);
@@ -60,10 +57,15 @@ public interface ICourseService extends IService<Course> {
 
     /**
      * 统计每个分类id所拥有的课程数量
-     * @param categoryIds 分类id
      * @return 分类对应的课程数量
      */
-    Map<Long, Integer> countCourseNumOfCategory(List<Long> categoryIds);
+    Map<Long, Integer> countCourseNumOfCategory();
+
+    /**
+     * 查询有已上架课程分类的分类id
+     * @return
+     */
+    List<Long> getCategoryIdListWithCourse();
 
     /**
      * 统计某个课程分类的课程数量
@@ -92,14 +94,28 @@ public interface ICourseService extends IService<Course> {
      * 根据课程分类id查询课程列表
      * @param categoryId 课程分类id
      * @param level 课程分类级别
-     * @return 课程列表
+     * @return
      */
     List<Course> queryByCategoryIdAndLevel(Long categoryId, Integer level);
 
     /**
-     * 根据课程id查询课程信息、目录信息、进度等
-     * @param courseId 课程id
-     * @return 课程vo
+     * 校验名称是否存在，或者被其他课程占用
+     * @param name 课程名称
+     * @param id 当前课程名称
      */
-    CourseAndSectionVO queryCourseAndCatalogById(Long courseId);
+    NameExistVO checkName(String name, Long id);
+
+    /**
+     * 查询课程id列表中
+     * @param idList
+     * @return
+     */
+    List<Long> queryExists(List<Long> idList,List<Integer> statusList);
+
+    /**
+     * 根据课程name模糊查询课程id列表
+     * @param name
+     * @return
+     */
+    List<Long> queryCourseIdByName(String name);
 }

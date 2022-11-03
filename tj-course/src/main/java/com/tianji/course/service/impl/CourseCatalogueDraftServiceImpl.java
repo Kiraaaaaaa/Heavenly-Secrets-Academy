@@ -2,6 +2,7 @@ package com.tianji.course.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.api.client.exam.ExamClient;
 import com.tianji.api.dto.exam.QuestionBizDTO;
@@ -13,20 +14,21 @@ import com.tianji.common.utils.*;
 import com.tianji.common.validate.Checker;
 import com.tianji.course.constants.CourseConstants;
 import com.tianji.course.constants.CourseErrorInfo;
+import com.tianji.course.constants.CourseStatus;
 import com.tianji.course.domain.dto.CataSaveDTO;
 import com.tianji.course.domain.dto.CataSubjectDTO;
 import com.tianji.course.domain.dto.CourseMediaDTO;
 import com.tianji.course.domain.po.*;
 import com.tianji.course.domain.vo.CataSimpleSubjectVO;
-import com.tianji.api.dto.course.CatalogueDTO;
+import com.tianji.course.domain.vo.CataVO;
 import com.tianji.course.mapper.CourseCataSubjectDraftMapper;
 import com.tianji.course.mapper.CourseCataSubjectMapper;
 import com.tianji.course.mapper.CourseCatalogueDraftMapper;
 import com.tianji.course.mapper.CourseCatalogueMapper;
+import com.tianji.course.service.ICourseCataSubjectDraftService;
 import com.tianji.course.service.ICourseCatalogueDraftService;
 import com.tianji.course.service.ICourseCatalogueService;
 import com.tianji.course.service.ICourseDraftService;
-import com.tianji.course.service.ISubjectService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -68,130 +70,177 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
     private CourseCatalogueDraftMapper courseCatalogueDraftMapper;
 
     @Autowired
-    private ISubjectService subjectService;
+    private ExamClient examClient;
 
     @Autowired
-    private ExamClient examClient;
+    private ICourseCataSubjectDraftService courseCataSubjectDraftService;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
-    public void save(Long courseId, List<CataSaveDTO> cataSaveDTOS,Integer step) {
-        //根据章的序号按照升序重新排序
-        cataSaveDTOS = cataSaveDTOS.stream().sorted(Comparator.comparing(CataSaveDTO::getIndex)).collect(Collectors.toList());
+    public void save(Long courseId, List<CataSaveDTO> cataSaveDTOS, Integer step) {
+        //1.根据章的序号按照升序重新排序
+        cataSaveDTOS = cataSaveDTOS
+                .stream()
+                .sorted(Comparator.comparing(CataSaveDTO::getIndex))
+                .collect(Collectors.toList());
 
-        //校验章的序号
-        if (cataSaveDTOS.size() != cataSaveDTOS.stream().map(CataSaveDTO::getIndex).distinct().count()) {
+        //2.校验章的序号
+        if (cataSaveDTOS.size() != cataSaveDTOS
+                .stream()
+                .map(CataSaveDTO::getIndex)
+                .distinct()
+                .count()) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_CATAS_SAVE_INEDX);
         }
         if (cataSaveDTOS.size() < cataSaveDTOS.get(cataSaveDTOS.size() - 1).getIndex()) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_CATAS_SAVE_INEDX_JUMP);
         }
 
-        //已经上架的目录
-        LambdaQueryWrapper<CourseCatalogue> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(CourseCatalogue::getCourseId, courseId);
+        //2.已经上架的目录
+        LambdaQueryWrapper<CourseCatalogue> queryWrapper =
+                Wrappers.lambdaQuery(CourseCatalogue.class)
+                        .eq(CourseCatalogue::getCourseId, courseId);
         List<CourseCatalogue> courseCatalogues = courseCatalogueMapper.selectList(queryWrapper);
 
+        //2.1.校验以上架目录是否更新
         checkIndex(cataSaveDTOS, courseCatalogues);
-        //组装数据
-        List<CourseCatalogueDraft> courseCatalogueDrafts = packageCatalogue(courseId, cataSaveDTOS, courseCatalogues);
-        //根据课程id，删除原有的课程目录
-        if(step == CourseConstants.CourseStep.CATALOGUE) {
-            // 保存目录结构，不能删除练习  有练习保存，该章节中所有的小节练习都要删除
-            courseCatalogueDraftMapper.deleteByCourseId(courseId, Arrays.asList(CourseConstants.CataType.CHAPTER,
-                    CourseConstants.CataType.SECTION));
-        }else if (step == CourseConstants.CourseStep.SUBJECT){
-            //没有练习保存的情况下
-            courseCatalogueDraftMapper.deleteByCourseId(courseId, Arrays.asList(CourseConstants.CataType.CHAPTER,
-                    CourseConstants.CataType.SECTION, CourseConstants.CataType.PRATICE));
-        }else {
+        //3.组装数据保存到数据库
+        List<CourseCatalogueDraft> courseCatalogueDrafts =
+                packageCatalogue(courseId, cataSaveDTOS, courseCatalogues);
+        //4.删除原有目录信息
+        if (step == CourseConstants.CourseStep.CATALOGUE) {
+            //4.1删除小节和章数据
+            courseCatalogueDraftMapper.deleteByCourseId(courseId,
+                    Arrays.asList(
+                            CourseConstants.CataType.CHAPTER,
+                            CourseConstants.CataType.SECTION));
+        } else if (step == CourseConstants.CourseStep.SUBJECT) {
+            //4.2保存题目时需要删除所有目录
+            courseCatalogueDraftMapper.deleteByCourseId(courseId,
+                    Arrays.asList(
+                            CourseConstants.CataType.CHAPTER,
+                            CourseConstants.CataType.SECTION,
+                            CourseConstants.CataType.PRATICE));
+        } else {
             throw new BizIllegalException(ErrorInfo.Msg.OPERATE_FAILED);
         }
-        //重新插入草稿
+        //5.目录重新插入草稿
         this.saveOrUpdateBatch(courseCatalogueDrafts);
 
-        //修改草稿保存步骤，步骤
+        //6.修改课程编辑进度
         courseDraftService.updateStep(courseId, CourseConstants.CourseStep.CATALOGUE);
 
+        //7.删除已删除章节题目
+        courseCataSubjectDraftService.deleteNotInCataIdList(courseId);
     }
 
     @Override
-    public List<CatalogueDTO> queryCourseCatalogues(Long courseId, Boolean see, Boolean withPractice) {
-        if (see) { //用于查看,先看上架的数据，没有上架数据在看草稿
-            List<CatalogueDTO> catalogueDTOS = courseCatalogueService.queryCourseCatalogues(courseId, withPractice);
-            if (CollUtils.isNotEmpty(catalogueDTOS)) {
-                return catalogueDTOS;
+    public List<CataVO> queryCourseCatalogues(Long courseId, Boolean see, Boolean withPractice) {
+        if (see) {
+            //1.1查询正式数据目录
+            List<CataVO> cataVOS = courseCatalogueService.queryCourseCataloguesVO(courseId, withPractice);
+            if (CollUtils.isNotEmpty(cataVOS)) {
+                return cataVOS;
             }
-            //查看草稿
-            catalogueDTOS = queryCourseCatalogues(courseId, withPractice);
-            return CollUtils.isEmpty(catalogueDTOS) ? new ArrayList<>() : catalogueDTOS;
+            //1.2查看草稿目录
+            cataVOS = queryCourseCatalogues(courseId, withPractice);
+            return CollUtils.isEmpty(cataVOS) ? new ArrayList<>() : cataVOS;
 
-        } else { //用于编辑，直接查看草稿
-            List<CatalogueDTO> catalogueDTOS = queryCourseCatalogues(courseId, withPractice);
-            return CollUtils.isEmpty(catalogueDTOS) ? new ArrayList<>() : catalogueDTOS;
+        } else {
+            //2.1查看草稿目录
+            List<CataVO> cataVOS = queryCourseCatalogues(courseId, withPractice);
+            return CollUtils.isEmpty(cataVOS) ? new ArrayList<>() : cataVOS;
         }
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public void saveMediaInfo(Long courseId, List<CourseMediaDTO> courseMediaDTOS) {
-        //小节id
-        //校验保存视频的小节id是否属于当前课程中的小节，
-        List<Long> cataIds = courseMediaDTOS.stream().map(CourseMediaDTO::getCataId).collect(Collectors.toList());
-        //
+        //1.校验保存视频的小节id是否属于当前课程中的小节，
+        List<Long> cataIds =
+                courseMediaDTOS.stream()
+                        .map(CourseMediaDTO::getCataId)
+                        .collect(Collectors.toList());
+        //2.每个小节都有上传媒资
         checkSectionIds(cataIds, courseId);
 
+        //3.获取课程草稿信息
         CourseDraft courseDraft = courseDraftService.getById(courseId);
-        if (courseDraft == null || courseDraft.getStep() < CourseConstants.CourseStep.CATALOGUE) {
+        //3.1判断新增课程是否按照顺序上传媒资
+        if (courseDraft == null ||
+                courseDraft.getStep() < CourseConstants.CourseStep.CATALOGUE) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_MEDIA_SAVE_NO_EXECUTE);
         }
 
-        List<CourseCatalogueDraft> catalogueDrafts = BeanUtils.copyList(courseMediaDTOS, CourseCatalogueDraft.class,
-                (dto, courseCatalogueDraft) -> courseCatalogueDraft.setId(dto.getCataId()));
+        //4.媒资设置到小节信息中
+        List<CourseCatalogueDraft> catalogueDrafts =
+                BeanUtils.copyList(courseMediaDTOS, CourseCatalogueDraft.class,
+                        (dto, courseCatalogueDraft) ->
+                                courseCatalogueDraft.setId(dto.getCataId()));
+        //4.1.更新小节媒资信息
         this.updateBatchById(catalogueDrafts);
+        //4.2.更新课程填写步骤
         courseDraftService.updateStep(courseId, CourseConstants.CourseStep.MEDIA);
+        //5.统计每个章节媒资播放总时长
+        List<CourseCatalogueDraft> courseCatalogueDrafts = calculateCatalogMediaDuration(courseId);
+        //5.1批量更新每个大章的课时总数量
+        this.updateBatchById(courseCatalogueDrafts, 500);
+
+
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public void saveSuject(Long courseId, List<CataSubjectDTO> cataSubjectDTOS) {
-        List<Long> cataIds = cataSubjectDTOS.stream().map(CataSubjectDTO::getCataId).collect(Collectors.toList());
+        //1.数据校验
+        //1.1.转化目录id列表
+        List<Long> cataIds = cataSubjectDTOS
+                .stream()
+                .map(CataSubjectDTO::getCataId)
+                .collect(Collectors.toList());
         checkPracticeIds(cataIds, courseId);
         List<CourseCataSubjectDraft> cataSubjectDrafts = new ArrayList<>();
 
+        //2.查询课程草稿
         CourseDraft courseDraft = courseDraftService.getById(courseId);
+        //2.1.判断当前是否可以上传题目
         if (courseDraft == null || courseDraft.getStep() < CourseConstants.CourseStep.MEDIA) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_MEDIA_SAVE_NO_EXECUTE);
         }
 
+        //3.组装题目目录关系
         for (CataSubjectDTO cataSubjectDTO : cataSubjectDTOS) {
             for (Long subjectId : cataSubjectDTO.getSubjectIds()) {
                 CourseCataSubjectDraft courseCataSubjectDraft = new CourseCataSubjectDraft();
+                //3.1.课程id
                 courseCataSubjectDraft.setCourseId(courseId);
+                //3.2.题目id
                 courseCataSubjectDraft.setSubjectId(subjectId);
+                //3.3.课程目录
                 courseCataSubjectDraft.setCataId(cataSubjectDTO.getCataId());
                 if (courseCataSubjectDraft.getId() == null) {
                     courseCataSubjectDraft.setId(IdWorker.getId());
                 }
-
+                //3.4.课程题目关系添加到
                 cataSubjectDrafts.add(courseCataSubjectDraft);
             }
         }
-        //删除练习和题目对应的关系
+        //4.删除练习和题目对应的关系
         courseCataSubjectDraftMapper.deleteByCourseId(courseId);
-        //批量插入练习和题目之间的关系
-        if(!cataSubjectDrafts.isEmpty()) {
+        //5.批量插入练习和题目之间的关系
+        if (!cataSubjectDrafts.isEmpty()) {
             courseCataSubjectDraftMapper.batchInsert(cataSubjectDrafts);
         }
-        //修改课程填写step
+        //6.修改课程填写进度
         courseDraftService.updateStep(courseId, CourseConstants.CourseStep.SUBJECT);
     }
 
     @Override
     public List<CataSimpleSubjectVO> getSuject(Long courseId) {
 
+        //1.查询课程目录和题目关系
         List<CourseCataSubjectDraft> cataSubjectDrafts = courseCataSubjectDraftMapper.getByCourseId(courseId);
-        if(CollUtils.isEmpty(cataSubjectDrafts)) {
+        if (CollUtils.isEmpty(cataSubjectDrafts)) {
             return new ArrayList<>();
         }
         List<Long> subjectIdList = cataSubjectDrafts.stream().map(CourseCataSubjectDraft::getSubjectId).collect(Collectors.toList());
@@ -199,14 +248,20 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         Map<Long, String> subjectIdAndNameMap = subjects.stream()
                 .collect(Collectors.toMap(QuestionDTO::getId, QuestionDTO::getName));
 
-        return cataSubjectDrafts.stream().collect(Collectors.groupingBy(CourseCataSubjectDraft::getCataId))
+        //4.组装数据
+        return cataSubjectDrafts.stream()
+                //4.1.分组
+                .collect(Collectors.groupingBy(CourseCataSubjectDraft::getCataId))
                 .entrySet().stream().map(entry -> {
-
+                    //4.2.小节或测试对应的题目列表
                     List<CataSimpleSubjectVO.SubjectInfo> subjectInfos = new ArrayList<>();
-                    for (CourseCataSubjectDraft cataSubjectDraft: entry.getValue()){
+                    for (CourseCataSubjectDraft cataSubjectDraft : entry.getValue()) {
+                        //4.3.将题目id和题目名称加入到小节或测试的题目列表中
                         subjectInfos.add(new CataSimpleSubjectVO.SubjectInfo(
-                                cataSubjectDraft.getSubjectId(), subjectIdAndNameMap.get(cataSubjectDraft.getSubjectId())));
+                                cataSubjectDraft.getSubjectId(),
+                                subjectIdAndNameMap.get(cataSubjectDraft.getSubjectId())));
                     }
+                    //4.4.组装小节或测试对应题目列表model
                     return new CataSimpleSubjectVO(entry.getKey(), subjectInfos);
                 }).collect(Collectors.toList());
     }
@@ -244,7 +299,6 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         });
     }
 
-    // TODO 分布式事务
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {DbException.class, Exception.class})
     public void copySubjectToShelf(Long courseId, Boolean isFirstShelf) {
@@ -290,15 +344,18 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
 
     @Override
     public Map<Long, Integer> calculateMediaDuration(Long courseId) {
-        LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(CourseCatalogueDraft::getCourseId, courseId)
-                .eq(CourseCatalogueDraft::getType, CourseConstants.CataType.SECTION);
+        LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper =
+                Wrappers.lambdaQuery(CourseCatalogueDraft.class)
+                        .eq(CourseCatalogueDraft::getCourseId, courseId)
+                        .eq(CourseCatalogueDraft::getType, CourseConstants.CataType.SECTION);
         List<CourseCatalogueDraft> list = list(queryWrapper);
         if (CollUtils.isEmpty(list)) {
             return new HashMap<>();
         }
-        return list.stream().collect(Collectors.groupingBy(CourseCatalogueDraft::getParentCatalogueId,
-                Collectors.summingInt(CourseCatalogueDraft::getMediaDuration)));
+        return list.stream()
+                .collect(Collectors.groupingBy(
+                        CourseCatalogueDraft::getParentCatalogueId,
+                        Collectors.summingInt(CourseCatalogueDraft::getMediaDuration)));
     }
 
     @Override
@@ -308,6 +365,24 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
                 .in(CourseCatalogueDraft::getType,
                         Arrays.asList(CourseConstants.CataType.SECTION, CourseConstants.CataType.PRATICE));
         return count(queryWrapper);
+    }
+
+    @Override
+    public List<Long> queryCataIdsOfCourse(Long courseId, List<Integer> types) {
+        //1.查询条件
+        LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper =
+                Wrappers.lambdaQuery(CourseCatalogueDraft.class)
+                        .eq(CourseCatalogueDraft::getCourseId, courseId)
+                        .in(CourseCatalogueDraft::getType, types);
+        //2.查询数据
+        List<CourseCatalogueDraft> courseCatalogueDrafts = baseMapper.selectList(queryWrapper);
+        //3.返回数据
+        return CollUtils.isEmpty(courseCatalogueDrafts)
+                ? new ArrayList<>()
+                : courseCatalogueDrafts
+                .stream()
+                .map(CourseCatalogueDraft::getId)
+                .collect(Collectors.toList());
     }
 
 
@@ -415,8 +490,8 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
             courseCatalogueDrafts.add(courseCatalogueDraft);
             //小节练习目录，小节有需要，练习没有需要
             //序号
-            AtomicInteger indexCount = new AtomicInteger(1);
-            cataSaveDTO.getSections().stream().forEach(section->{
+            AtomicInteger indexCount = new AtomicInteger(0);
+            cataSaveDTO.getSections().stream().forEach(section -> {
                 Long sectionId = section.getId() == null ? IdWorker.getId() : section.getId();
                 //小节练习目录
                 CourseCatalogueDraft courseCatalogueDraftSection = savedMap.get(sectionId);
@@ -432,26 +507,11 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
                         chapterId, courseId);
                 courseCatalogueDrafts.add(courseCatalogueDraftSection);
             });
-
-//            for (int count = 0; count < cataSaveDTO.getSections().size(); count++) {
-//                CataSaveDTO section = cataSaveDTO.getSections().get(count);
-//                Long sectionId = section.getId() == null ? IdWorker.getId() : section.getId();
-//                //小节练习目录
-//                CourseCatalogueDraft courseCatalogueDraftSection = savedMap.get(sectionId);
-//                if (courseCatalogueDraftSection == null) { //未保存过
-//                    courseCatalogueDraftSection = new CourseCatalogueDraft();
-//                    courseCatalogueDraftSection.setId(sectionId);
-//                }
-//                //设置目录添加或修改时的基本信息
-//                courseCatalogueDraftSection.setCataBaseInfo(count + 1, section.getName(), section.getType(),
-//                        chapterId, courseId);
-//                courseCatalogueDrafts.add(courseCatalogueDraftSection);
-//            }
         }
         return courseCatalogueDrafts;
     }
 
-    private List<CatalogueDTO> queryCourseCatalogues(Long courseId, Boolean withPractice) {
+    private List<CataVO> queryCourseCatalogues(Long courseId, Boolean withPractice) {
         LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(CourseCatalogueDraft::getCourseId, courseId);
         if (!withPractice) {
@@ -464,24 +524,56 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         if (CollUtils.isEmpty(courseCatalogueDrafts)) {
             return null;
         }
+        CourseDraft courseDraft = courseDraftService.getById(courseId);
+
+        // 最大上架数,待上架设置空map，已上架需要排序并去小节序号（同一个章中）中最大小节
+        Map<Long, CourseCatalogueDraft> chapterIdAndMaxSectionMap =
+                (courseDraft.getStatus() == CourseStatus.NO_UP_SHELF.getStatus())
+                ? new HashMap<>() :
+                courseCatalogueDrafts.parallelStream()
+                .filter(ccd -> ccd.getType() == CourseConstants.CataType.SECTION && !ccd.getCanUpdate())
+                .collect(Collectors.groupingBy(CourseCatalogueDraft::getParentCatalogueId,
+                        Collectors.collectingAndThen(
+                                Collectors.reducing(
+                                        (c1, c2) -> c2.getCIndex().compareTo(c1.getCIndex()) > 0 ? c2 : c1),
+                                Optional::get)));
+        int maxChapterIndex = (courseDraft.getStatus() == CourseStatus.NO_UP_SHELF.getStatus())
+                ? 0
+                : courseCatalogueDrafts.stream()
+                .filter(ccd -> ccd.getType() == CourseConstants.CataType.CHAPTER && !ccd.getCanUpdate())
+                .map(CourseCatalogueDraft::getCIndex)
+                .max(Integer::compare).get();
 
 
-        // 4.查询课程对应的小节和题目信息
-        List<CourseCataSubjectDraft> subjects = courseCataSubjectDraftMapper.getByCourseId(courseId);
-        // 4.1.统计题目数量
-        Map<Long, Long> cataIdAndNumMap = CollUtils.isEmpty(subjects) ? new HashMap<>() :
-                subjects.stream().collect(Collectors.groupingBy(CourseCataSubjectDraft::getCataId, Collectors.counting()));
-        // 4.2.查询分数
-        Map<Long, Integer> cataIdAndTotalScoreMap = new HashMap<>(cataIdAndNumMap.size());
-        if(CollUtils.isNotEmpty(subjects)){
-            Set<Long> sectionIds = subjects.stream().map(CourseCataSubjectDraft::getCataId).collect(Collectors.toSet());
-            cataIdAndTotalScoreMap.putAll(examClient.queryQuestionScoresByBizIds(sectionIds));
-        }
-        return TreeDataUtils.parseToTree(courseCatalogueDrafts, CatalogueDTO.class, (catalogueDraft, vo) -> {
+        //课程的数量和分数
+        List<CataIdAndSubScore> cataIdAndSubScores = courseCataSubjectDraftMapper.queryCataIdAndScoreByCorseId(courseId);
+        //练习和题目数量map
+        Map<Long, Long> cataIdAndNumMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
+                cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.counting()));
+        Map<Long, Integer> cataIdAndTotalScoreMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
+                cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.summingInt(CataIdAndSubScore::getScore)));
+
+
+        return TreeDataUtils.parseToTree(courseCatalogueDrafts, CataVO.class, (catalogueDraft, vo) -> {
+            int maxIndexOnShelf = 0;
+            int maxSectionIndexOnShelf = 0;
+            if(catalogueDraft.getType() == CourseConstants.CataType.SECTION){
+                //小节最大编辑数
+                CourseCatalogueDraft courseCatalogueDraft = chapterIdAndMaxSectionMap.get(catalogueDraft.getParentCatalogueId());
+                maxIndexOnShelf = NumberUtils.null2Zero(
+                        courseCatalogueDraft == null ? 0 : courseCatalogueDraft.getCIndex());
+            }else if(catalogueDraft.getType() == CourseConstants.CataType.CHAPTER){
+                maxIndexOnShelf = maxChapterIndex;
+                CourseCatalogueDraft courseCatalogueDraft = chapterIdAndMaxSectionMap.get(catalogueDraft.getId());
+                maxSectionIndexOnShelf = NumberUtils.null2Zero(
+                        courseCatalogueDraft == null ? 0 : courseCatalogueDraft.getCIndex());
+            }
             vo.setIndex(catalogueDraft.getCIndex());
             vo.setMediaName(catalogueDraft.getVideoName());
             vo.setSubjectNum(NumberUtils.null2Zero(cataIdAndNumMap.get(catalogueDraft.getId())).intValue()); //练习总数量
             vo.setTotalScore(NumberUtils.null2Zero(cataIdAndTotalScoreMap.get(catalogueDraft.getId()))); //练习总分数
+            vo.setMaxIndexOnShelf(maxIndexOnShelf);
+            vo.setMaxSectionIndexOnShelf(maxSectionIndexOnShelf);
         }, new CourseCatalogDraftDataWrapper());
     }
 
@@ -506,11 +598,14 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_CATA_NOT_EXISTS);
         }
         //所有小节和练习的目录id列表
-        List<Long> allCataIdList = courseCatalogueDrafts.stream().map(CourseCatalogueDraft::getId).collect(Collectors.toList());
+        List<Long> allCataIdList = courseCatalogueDrafts
+                .stream()
+                .map(CourseCatalogueDraft::getId)
+                .collect(Collectors.toList());
 
         //判断前端传过来的章节id列表是该课程所有小节和练习集合的子集，
         // 如果不是子集，说明前端传过来的章节id不属于当前课程
-        if(!CollUtils.containsAll(allCataIdList, cataIds)) {
+        if (!CollUtils.containsAll(allCataIdList, cataIds)) {
             log.error("传过来了其他章节的章节id，courseId:{},cataIds:{}", courseId, cataIds);
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_MEDIA_SAVE_ILLEGAL);
         }
@@ -518,7 +613,7 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         List<Long> practiceIdList = courseCatalogueDrafts.stream().filter(practice -> practice.getType() == CourseConstants.CataType.PRATICE).
                 map(CourseCatalogueDraft::getId).collect(Collectors.toList());
         //判断前端传过来的章节id列表是否符合是课程练习id父集合
-        if(!CollUtils.containsAll(cataIds, practiceIdList)){
+        if (!CollUtils.containsAll(cataIds, practiceIdList)) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_SUBJECT_SAVE_SUBJECT_IDS_NULL);
         }
     }
@@ -527,33 +622,75 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
      * 校验小节或练习id列表
      * 1.校验本课程所有的小节都添加了视频
      * 2.校验上传的数据中有其他课程的数据，
-     * 原理：1.先比较接口传递过来的数据和数据库中的目录总数量一致,不一致返回失败
+     * 原理：1.先比较接口传递过来的数据和数据库中的小节总数量一致,不一致返回失败
      * 2.总数量一致，再求两者的交集，交集集合长度和前端传过来的数量一致，则通过
      *
      * @param cataIds  前端传过来的小节id列表或者练习列表
      * @param courseId 课程id
      */
     private void checkSectionIds(List<Long> cataIds, Long courseId) {
-        LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(CourseCatalogueDraft::getType, CourseConstants.CataType.SECTION)
-                .eq(CourseCatalogueDraft::getCourseId, courseId);
+        //1.数据库小节查询条件
+        LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper =
+                Wrappers.lambdaQuery(CourseCatalogueDraft.class)
+                        .eq(CourseCatalogueDraft::getType, CourseConstants.CataType.SECTION)
+                        .eq(CourseCatalogueDraft::getCourseId, courseId);
+        //2.查询小节
         List<CourseCatalogueDraft> courseCatalogueDrafts = baseMapper.selectList(queryWrapper);
 
+        //3.判断数据库中的小节和前端传来的小节数量是否一致
         if (CollUtils.size(courseCatalogueDrafts) != CollUtils.size(cataIds)) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_MEDIA_SAVE_MEDIA_NULL);
         }
-//        计算从前端传来的小节的id列表和数据库中小节的id的列表，求交集，交集数量=数据库中小节的id的列表数量，说明每个小节都上传视频了
-        List<Long> cataIdsInDb = courseCatalogueDrafts.stream().map(CourseCatalogueDraft::getId).collect(Collectors.toList());
+        //4.转化出数据库中课程小节id列表
+        List<Long> cataIdsInDb =
+                courseCatalogueDrafts
+                        .stream()
+                        .map(CourseCatalogueDraft::getId)
+                        .collect(Collectors.toList());
+        //5.取前端传来小节id列表和数据库中小节id列表交集
         Collection<Long> cataIdsOfIntersection = CollUtils.intersection(cataIds, cataIdsInDb);
+        //6.判断小节交集id列表数量和前端传来小节id列表数量是否一致
         if (cataIdsOfIntersection.size() != cataIds.size()) {
             throw new BizIllegalException(CourseErrorInfo.Msg.COURSE_MEDIA_SAVE_MEDIA_NULL);
         }
     }
 
     /**
+     * 根据课程id统计每个大章的媒资总时长
+     *
+     * @param courseId
+     * @return
+     */
+    private List<CourseCatalogueDraft> calculateCatalogMediaDuration(Long courseId) {
+        //1.查询条件
+        LambdaQueryWrapper<CourseCatalogueDraft> queryWrapper =
+                Wrappers.lambdaQuery(CourseCatalogueDraft.class)
+                        .eq(CourseCatalogueDraft::getCourseId, courseId)
+                        .eq(CourseCatalogueDraft::getType, CourseConstants.CataType.SECTION);
+        //2.查询数据
+        List<CourseCatalogueDraft> courseCatalogueDrafts = baseMapper.selectList(queryWrapper);
+        if (CollUtils.isEmpty(courseCatalogueDrafts)) {
+            return new ArrayList<>();
+        }
+        //3.统计每个章的课时总时长
+        Map<Long, Integer> capthIdAndMediaDurationMap =
+                courseCatalogueDrafts.stream().collect(Collectors.groupingBy(
+                        CourseCatalogueDraft::getParentCatalogueId,
+                        Collectors.summingInt(CourseCatalogueDraft::getMediaDuration)));
+        //4.封装数据
+        return capthIdAndMediaDurationMap.keySet()
+                .stream()
+                .map(key -> CourseCatalogueDraft.builder()
+                        .id(key)
+                        .mediaDuration(capthIdAndMediaDurationMap.get(key))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 课程目录草稿树型数据转换器
      */
-    private class CourseCatalogDraftDataWrapper implements TreeDataUtils.DataProcessor<CatalogueDTO, CourseCatalogueDraft> {
+    private class CourseCatalogDraftDataWrapper implements TreeDataUtils.DataProcessor<CataVO, CourseCatalogueDraft> {
 
         @Override
         public Object getParentKey(CourseCatalogueDraft courseCatalogueDraft) {
@@ -571,12 +708,12 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
         }
 
         @Override
-        public List<CatalogueDTO> getChild(CatalogueDTO catalogueDTO) {
-            return catalogueDTO.getSections();
+        public List<CataVO> getChild(CataVO cataVO) {
+            return cataVO.getSections();
         }
 
         @Override
-        public void setChild(CatalogueDTO parent, List<CatalogueDTO> child) {
+        public void setChild(CataVO parent, List<CataVO> child) {
             parent.setSections(child);
         }
     }

@@ -1,7 +1,7 @@
 package com.tianji.course.domain.dto;
 
-
 import com.tianji.common.exceptions.BadRequestException;
+import com.tianji.common.utils.DateUtils;
 import com.tianji.common.validate.Checker;
 import com.tianji.course.constants.CourseErrorInfo;
 import com.tianji.course.utils.CourseSaveBaseGroup;
@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
  **/
 
 @Data
-@ApiModel("课程基本信息保存")
+@ApiModel(description = "课程基本信息保存")
 public class CourseBaseInfoSaveDTO implements Checker {
     @ApiModelProperty("课程id，新课程该值不能传，老课程必填")
     private Long id;
@@ -42,8 +42,8 @@ public class CourseBaseInfoSaveDTO implements Checker {
     @ApiModelProperty("课程价格")
     @Min(value = 0, message = CourseErrorInfo.Msg.COURSE_SAVE_PRICE_NEGATIVE)
     private Integer price;
-    @ApiModelProperty("购买周期开始时间")
-    @NotNull(message = CourseErrorInfo.Msg.COURSE_SAVE_PURCHASE_TIME_NULL)
+//    @ApiModelProperty("购买周期开始时间")
+//    @NotNull(message = CourseErrorInfo.Msg.COURSE_SAVE_PURCHASE_TIME_NULL)
     private LocalDateTime purchaseStartTime;
     @ApiModelProperty("购买周期结束时间")
     @NotNull(message = CourseErrorInfo.Msg.COURSE_SAVE_PURCHASE_TIME_NULL)
@@ -75,8 +75,14 @@ public class CourseBaseInfoSaveDTO implements Checker {
                 throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_PRICE_FREE);
             }
         }
-        if (purchaseStartTime.isAfter(purchaseEndTime)) {
+        if(purchaseEndTime.isBefore(DateUtils.now())){
             throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_PURCHASE_ILLEGAL);
         }
+//        if (purchaseStartTime.isAfter(purchaseEndTime)) {
+//            throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_PURCHASE_ILLEGAL);
+//        }
+//        if(id == null && purchaseStartTime.isBefore(LocalDateTime.now())){
+//            throw new BadRequestException(CourseErrorInfo.Msg.COURSE_SAVE_PURCHASE_ILLEGAL2);
+//        }
     }
 }

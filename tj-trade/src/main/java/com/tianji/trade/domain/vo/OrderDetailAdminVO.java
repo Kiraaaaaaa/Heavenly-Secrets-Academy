@@ -38,6 +38,8 @@ public class OrderDetailAdminVO {
 
     @ApiModelProperty("申请退款原因")
     private String refundReason;
+    @ApiModelProperty("申请退款描述")
+    private String refundMessage;
     @ApiModelProperty("审批意见")
     private String remark;
 

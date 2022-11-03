@@ -1,11 +1,12 @@
 package com.tianji.course.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.tianji.api.dto.course.CatalogueDTO;
 import com.tianji.api.dto.course.MediaQuoteDTO;
 import com.tianji.api.dto.course.SectionInfoDTO;
 import com.tianji.course.domain.po.CourseCatalogue;
 import com.tianji.course.domain.vo.CataSimpleInfoVO;
-import com.tianji.api.dto.course.CatalogueDTO;
+import com.tianji.course.domain.vo.CataVO;
 
 import java.util.List;
 
@@ -52,4 +53,8 @@ public interface ICourseCatalogueService extends IService<CourseCatalogue> {
     List<CataSimpleInfoVO> getCatasIndexList(Long courseId);
 
     List<CataSimpleInfoVO> getManyCataSimpleInfo(List<Long> ids);
+
+    CataSimpleInfoVO querySectionInfoById(Long id);
+
+    List<CataVO> queryCourseCataloguesVO(Long courseId, Boolean withPractice);
 }

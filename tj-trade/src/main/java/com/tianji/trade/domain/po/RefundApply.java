@@ -66,6 +66,10 @@ public class RefundApply implements Serializable {
      * 申请退款原因
      */
     private String refundReason;
+    /**
+     * 退款原因描述
+     */
+    private String questionDesc;
 
     /**
      * 审批人id
@@ -85,7 +89,7 @@ public class RefundApply implements Serializable {
      */
     private String refundChannel;
     /**
-     * 退款原因
+     * 退款失败原因
      */
     private String failedReason;
 

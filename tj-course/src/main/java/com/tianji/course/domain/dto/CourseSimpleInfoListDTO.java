@@ -1,6 +1,5 @@
 package com.tianji.course.domain.dto;
 
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -12,7 +11,6 @@ import java.util.List;
  * @version 1.0.0
  **/
 @Data
-@ApiModel(description = "课程及课程分类参数")
 public class CourseSimpleInfoListDTO {
 
     @ApiModelProperty("三级分类id列表")

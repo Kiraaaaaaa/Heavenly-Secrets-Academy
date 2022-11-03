@@ -1,7 +1,5 @@
 package com.tianji.course.domain.po;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -82,7 +80,7 @@ public class CourseDraft implements Serializable {
     private String templateUrl;
 
     /**
-     * 课程状态，0：待上架，1：已上架，2：下架，3：已完结
+     * 课程状态，1：待上架，2：已上架，3：下架，4：已完结
      */
     private Integer status;
 
@@ -100,6 +98,11 @@ public class CourseDraft implements Serializable {
      * 信息填写进度1：基本信息已经保存，2：课程目录已经保存，3：课程视频已保存，4：课程题目已保存，5：课程老师已经保存
      */
     private Integer step;
+
+    /**
+     * 课程评分，45代表4.5星
+     */
+    private Integer score;
 
     /**
      * 视频总时长
@@ -120,10 +123,17 @@ public class CourseDraft implements Serializable {
      * 是否可以修改
      */
     private Boolean canUpdate;
+
+    private Integer cVersion;
     /**
      * 部门id
      */
     private Long depId;
+
+    /**
+     * 发布时间
+     */
+    private LocalDateTime publishTime;
 
     /**
      * 创建时间
@@ -138,13 +148,11 @@ public class CourseDraft implements Serializable {
     /**
      * 创建人
      */
-
     private Long creater;
 
     /**
      * 更新人
      */
-
     private Long updater;
 
 

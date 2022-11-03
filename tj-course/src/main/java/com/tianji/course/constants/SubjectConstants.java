@@ -13,19 +13,16 @@ public class SubjectConstants {
     @AllArgsConstructor
     @Getter
     public enum Type {
-        SINGLE_CHOICE(1, "单选题"),
-        MULTI_CHOICE(2, "多选题"),
+        SIGNLE_CHOICE(1, "单选题"),
+        MUtiple_CHOICE(2, "多选题"),
         NON_DIRECTIONAL_CHOICE(3, "不定向选择题"),
         JUDGEMENT_QUESTION(4, "判断题");
-        private final int value;
-        private final String desc;
+        private Integer type;
+        private String desc;
 
         public static String desc(Integer subjectType) {
-            if (subjectType == null) {
-                return null;
-            }
             for (Type type : values()) {
-                if (type.value == subjectType) {
+                if (type.type == subjectType) {
                     return type.desc;
                 }
             }

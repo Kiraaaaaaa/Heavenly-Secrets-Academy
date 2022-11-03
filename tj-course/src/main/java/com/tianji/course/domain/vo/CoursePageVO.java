@@ -33,4 +33,11 @@ public class CoursePageVO {
     private LocalDateTime updateTime;
     @ApiModelProperty("课程编辑进度：1：基本信息已经保存，2：课程目录已经保存，3：课程视频已保存，4：课程题目已保存，5：课程老师已经保存")
     private Integer step;
+    @ApiModelProperty("课程发布时间")
+    private LocalDateTime publishTime;
+    @ApiModelProperty("下架时间")
+    private LocalDateTime purchaseEndTime;
+
+    public static final String[] EXCLUDE_FIELDS =
+            {"free", "type", "teacher","duration","publishTime"};
 }
