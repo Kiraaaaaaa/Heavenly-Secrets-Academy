@@ -92,7 +92,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.tianji.data.DataApplication</mainClass>
+                    <mainClass>com.tianji.data.DataCenterApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>
