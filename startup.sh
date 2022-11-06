@@ -68,7 +68,6 @@ else
    -p "${PORT}:${PORT}" \
    -p ${DEBUG_PORT}:5005 \
    -e JAVA_OPTS="${JAVA_OPTS}" \
-   --restart=always \
    --network heima-net ${IMAGE_NAME} \
   || exit 1
 fi

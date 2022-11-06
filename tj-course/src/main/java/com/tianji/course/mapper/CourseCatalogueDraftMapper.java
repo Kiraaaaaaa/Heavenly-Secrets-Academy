@@ -33,4 +33,7 @@ public interface CourseCatalogueDraftMapper extends BaseMapper<CourseCatalogueDr
     @Insert("insert into course_catalogue_draft(" + COLUMNS + ",can_update) " +
             "(select " + COLUMNS + ",0 from course_catalogue where course_id=#{courseId})" )
     int insertFromCourseCatalogue(@Param("courseId") Long courseId);
+
+    @Select("SELECT id FROM course_catalogue_draft WHERE course_id=#{courseId} AND type IN (2, 3)")
+    List<Long> getSectionIdByCourseId(Long courseId);
 }

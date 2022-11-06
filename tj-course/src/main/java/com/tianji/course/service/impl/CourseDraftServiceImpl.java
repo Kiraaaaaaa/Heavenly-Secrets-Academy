@@ -11,6 +11,7 @@ import com.tianji.api.client.trade.TradeClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.course.CourseDTO;
 import com.tianji.api.dto.course.CoursePurchaseInfoDTO;
+import com.tianji.api.dto.exam.QuestionBizDTO;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.ErrorInfo;
@@ -32,6 +33,7 @@ import com.tianji.course.domain.vo.CourseSaveVO;
 import com.tianji.course.domain.vo.NameExistVO;
 import com.tianji.course.mapper.*;
 import com.tianji.course.service.*;
+import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -464,7 +466,7 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
         //3.课程基本信息和内容信息copy到草稿中
         baseMapper.insertFromCourse(id);
         //4.课程内容copy到草稿中
-        courseContentDraftMapper.insertFromCourseContent(id);
+        copySubject2Draft(id);
         //5.目录内容copy到草稿中
         courseCatalogueDraftMapper.insertFromCourseCatalogue(id);
         //6.课程题目copy到草稿中
@@ -473,6 +475,22 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
         courseTeacherDraftMapper.insertFromCourseTeacher(id);
         //8.下架mq广播
         rabbitMqHelper.send(MqConstants.Exchange.COURSE_EXCHANGE, MqConstants.Key.COURSE_DOWN_KEY, id);
+    }
+
+    @GlobalTransactional
+    public void copySubject2Draft(Long courseId) {
+        // 1.查询课程有关的小节信息
+        List<Long> sectionIds = courseCatalogueDraftMapper.getSectionIdByCourseId(courseId);
+        // 2.查询题目关系
+        List<QuestionBizDTO> qbs = examClient.queryQuestionIdsByBizIds(sectionIds);
+        if (CollUtils.isEmpty(qbs)) {
+            return;
+        }
+        List<CourseCataSubjectDraft> list = qbs.stream().map(q -> new CourseCataSubjectDraft()
+                .setCourseId(courseId).setCataId(q.getBizId()).setSubjectId(q.getQuestionId())
+        ).collect(Collectors.toList());
+        // 3.保存到草稿表
+        courseCataSubjectDraftMapper.batchInsert(list);
     }
 
     @Override
