@@ -8,11 +8,12 @@
         <result column="course_id" property="courseId" />
         <result column="cata_id" property="cataId" />
         <result column="subject_id" property="subjectId" />
+        <result column="create_time" property="createTime" />
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, course_id, cata_id, subject_id
+        id, course_id, cata_id, subject_id, create_time
     </sql>
 
 </mapper>
