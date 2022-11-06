@@ -465,10 +465,10 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
         courseService.updateStatus(id, CourseStatus.DOWN_SHELF.getStatus());
         //3.课程基本信息和内容信息copy到草稿中
         baseMapper.insertFromCourse(id);
-        //4.课程内容copy到草稿中
-        copySubject2Draft(id);
-        //5.目录内容copy到草稿中
+        //4.目录内容copy到草稿中
         courseCatalogueDraftMapper.insertFromCourseCatalogue(id);
+        //5.课程内容copy到草稿中
+        copySubject2Draft(id);
         //6.课程题目copy到草稿中
         courseCataSubjectDraftMapper.insertFromCourseCataSubject(id);
         //7.课程老师copy到草稿中
@@ -481,6 +481,10 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
     public void copySubject2Draft(Long courseId) {
         // 1.查询课程有关的小节信息
         List<Long> sectionIds = courseCatalogueDraftMapper.getSectionIdByCourseId(courseId);
+        if (CollUtils.isEmpty(sectionIds)) {
+            log.error("课程小节数据为空");
+            return;
+        }
         // 2.查询题目关系
         List<QuestionBizDTO> qbs = examClient.queryQuestionIdsByBizIds(sectionIds);
         if (CollUtils.isEmpty(qbs)) {

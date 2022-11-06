@@ -54,6 +54,9 @@ public class QuestionBizServiceImpl extends ServiceImpl<QuestionBizMapper, Quest
 
     @Override
     public List<QuestionBizDTO> queryQuestionIdsByBizIds(List<Long> bizIds) {
+        if (CollUtils.isEmpty(bizIds)) {
+            return CollUtils.emptyList();
+        }
         List<QuestionBiz> list = lambdaQuery()
                 .in(QuestionBiz::getBizId, bizIds)
                 .list();
@@ -79,6 +82,9 @@ public class QuestionBizServiceImpl extends ServiceImpl<QuestionBizMapper, Quest
 
     @Override
     public Map<Long, Integer> queryQuestionScoresByBizIds(Iterable<Long> bizIds) {
+        if (CollUtils.isEmpty(bizIds)) {
+            return CollUtils.emptyMap();
+        }
         // 1.统计biz及对应题目的分数和
         List<IdAndNumDTO> list = baseMapper.countQuestionScoresByBizIds(bizIds);
         // 2.数据处理
