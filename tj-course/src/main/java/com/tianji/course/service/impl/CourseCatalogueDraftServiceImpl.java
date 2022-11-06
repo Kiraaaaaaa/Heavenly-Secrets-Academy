@@ -545,15 +545,17 @@ public class CourseCatalogueDraftServiceImpl extends ServiceImpl<CourseCatalogue
                 .max(Integer::compare).get();
 
 
-        //课程的数量和分数
-        List<CataIdAndSubScore> cataIdAndSubScores = courseCataSubjectDraftMapper.queryCataIdAndScoreByCorseId(courseId);
-        //练习和题目数量map
-        Map<Long, Long> cataIdAndNumMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
-                cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.counting()));
-        Map<Long, Integer> cataIdAndTotalScoreMap = CollUtils.isEmpty(cataIdAndSubScores) ? new HashMap<>() :
-                cataIdAndSubScores.stream().collect(Collectors.groupingBy(CataIdAndSubScore::getCataId, Collectors.summingInt(CataIdAndSubScore::getScore)));
-
-
+        // 4.查询课程对应的小节和题目信息
+        List<CourseCataSubjectDraft> subjects = courseCataSubjectDraftMapper.getByCourseId(courseId);
+        // 4.1.统计题目数量
+        Map<Long, Long> cataIdAndNumMap = CollUtils.isEmpty(subjects) ? new HashMap<>() :
+                subjects.stream().collect(Collectors.groupingBy(CourseCataSubjectDraft::getCataId, Collectors.counting()));
+        // 4.2.查询分数
+        Map<Long, Integer> cataIdAndTotalScoreMap = new HashMap<>(cataIdAndNumMap.size());
+        if(CollUtils.isNotEmpty(subjects)){
+            Set<Long> sectionIds = subjects.stream().map(CourseCataSubjectDraft::getCataId).collect(Collectors.toSet());
+            cataIdAndTotalScoreMap.putAll(examClient.queryQuestionScoresByBizIds(sectionIds));
+        }
         return TreeDataUtils.parseToTree(courseCatalogueDrafts, CataVO.class, (catalogueDraft, vo) -> {
             int maxIndexOnShelf = 0;
             int maxSectionIndexOnShelf = 0;
