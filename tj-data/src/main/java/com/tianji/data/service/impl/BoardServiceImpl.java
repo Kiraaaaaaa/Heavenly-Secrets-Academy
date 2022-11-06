@@ -45,7 +45,7 @@ public class BoardServiceImpl implements BoardService {
             // 2.1.获取数据类型
             DataTypeEnum dataTypeEnum = DataTypeEnum.get(type);
             // 2.2.获取数据
-            Object originData = redisTemplate.opsForHash().get(KEY_BOARD_DATA + version, type);
+            Object originData = redisTemplate.opsForHash().get(KEY_BOARD_DATA + version, type.toString());
             List<Double> data = originData == null
                     ? new ArrayList<>()
                     : JsonUtils.toList(originData.toString(), Double.class);
