@@ -465,12 +465,12 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
         courseService.updateStatus(id, CourseStatus.DOWN_SHELF.getStatus());
         //3.课程基本信息和内容信息copy到草稿中
         baseMapper.insertFromCourse(id);
-        //4.目录内容copy到草稿中
+        //4.课程内容copy到草稿中
+        courseContentDraftMapper.insertFromCourseContent(id);
+        //5.目录内容copy到草稿中
         courseCatalogueDraftMapper.insertFromCourseCatalogue(id);
-        //5.课程内容copy到草稿中
-        copySubject2Draft(id);
         //6.课程题目copy到草稿中
-        courseCataSubjectDraftMapper.insertFromCourseCataSubject(id);
+        copySubject2Draft(id);
         //7.课程老师copy到草稿中
         courseTeacherDraftMapper.insertFromCourseTeacher(id);
         //8.下架mq广播
