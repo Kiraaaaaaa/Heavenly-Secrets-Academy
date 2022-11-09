@@ -59,7 +59,6 @@ if [ "$DEBUG_PORT" = "0" ]; then
    -p "${PORT}:${PORT}" \
    -e JAVA_OPTS="${JAVA_OPTS}" \
    --memory 300m --memory-swap -1 \
-   --restart=always \
    --network heima-net ${IMAGE_NAME} \
   || exit 1
 else
