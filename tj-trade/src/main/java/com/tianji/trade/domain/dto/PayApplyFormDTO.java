@@ -4,7 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
-@ApiModel("支付申请信息")
+@ApiModel(description = "支付申请信息")
 @Data
 public class PayApplyFormDTO {
     @ApiModelProperty(value = "订单id",required = true)
