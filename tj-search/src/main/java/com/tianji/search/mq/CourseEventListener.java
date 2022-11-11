@@ -1,6 +1,7 @@
 package com.tianji.search.mq;
 
 import com.tianji.search.service.ICourseService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 import static com.tianji.common.constants.MqConstants.Exchange.COURSE_EXCHANGE;
 import static com.tianji.common.constants.MqConstants.Key.*;
 
+@Slf4j
 @Component
 public class CourseEventListener {
 
@@ -24,6 +26,7 @@ public class CourseEventListener {
             key = COURSE_UP_KEY
     ))
     public void listenCourseUp(Long courseId){
+        log.debug("监听到课程{}上架", courseId);
         courseService.handleCourseUp(courseId);
     }
 
@@ -33,6 +36,7 @@ public class CourseEventListener {
             key = COURSE_DOWN_KEY
     ))
     public void listenCourseDown(Long courseId){
+        log.debug("监听到课程{}下架", courseId);
         courseService.handleCourseDelete(courseId);
     }
 

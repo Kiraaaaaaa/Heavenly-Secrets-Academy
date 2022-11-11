@@ -2,6 +2,7 @@ package com.tianji.common.autoconfigure.mq;
 
 import cn.hutool.core.lang.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -10,6 +11,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import static com.tianji.common.constants.Constant.REQUEST_ID_HEADER;
 
 @Slf4j
 public class RabbitMqHelper {
@@ -74,8 +77,10 @@ public class RabbitMqHelper {
      * @param <T> 数据类型
      */
     public <T> void sendAsyn(String exchange, String routingKey, T t, Long time) {
+        String requestId = MDC.get(REQUEST_ID_HEADER);
         CompletableFuture.runAsync(()->{
             try {
+                MDC.put(REQUEST_ID_HEADER, requestId);
                 if(time != null && time > 0){
                     Thread.sleep( time);
                 }

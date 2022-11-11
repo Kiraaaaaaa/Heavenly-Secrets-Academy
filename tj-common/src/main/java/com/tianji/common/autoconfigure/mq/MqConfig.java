@@ -2,19 +2,28 @@ package com.tianji.common.autoconfigure.mq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tianji.common.utils.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.config.ContainerCustomizer;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.RepublishMessageRecoverer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
+import static com.tianji.common.constants.Constant.REQUEST_ID_HEADER;
 import static com.tianji.common.constants.MqConstants.Exchange.ERROR_EXCHANGE;
 import static com.tianji.common.constants.MqConstants.Key.ERROR_KEY_PREFIX;
 import static com.tianji.common.constants.MqConstants.Queue.ERROR_QUEUE_TEMPLATE;
@@ -26,6 +35,25 @@ public class MqConfig implements EnvironmentAware{
 
     private String defaultErrorRoutingKey;
     private String defaultErrorQueue;
+
+    @Bean(name = "rabbitListenerContainerFactory")
+    @ConditionalOnProperty(prefix = "spring.rabbitmq.listener", name = "type", havingValue = "simple",
+            matchIfMissing = true)
+    SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory(
+            SimpleRabbitListenerContainerFactoryConfigurer configurer, ConnectionFactory connectionFactory,
+            ObjectProvider<ContainerCustomizer<SimpleMessageListenerContainer>> simpleContainerCustomizer) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        configurer.configure(factory, connectionFactory);
+        simpleContainerCustomizer.ifUnique(factory::setContainerCustomizer);
+        factory.setAfterReceivePostProcessors(message -> {
+            Object header = message.getMessageProperties().getHeader(REQUEST_ID_HEADER);
+            if(header != null) {
+                MDC.put(REQUEST_ID_HEADER, header.toString());
+            }
+            return message;
+        });
+        return factory;
+    }
 
     @Bean
     public MessageConverter messageConverter(ObjectMapper mapper){
