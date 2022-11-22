@@ -37,7 +37,7 @@ public class JwtTool {
     }
 
     /**
-     * 创建刷新token
+     * 创建刷新token，并将token的JTI记录到Redis中
      * @param userDetail 用户信息
      * @return 刷新token
      */
