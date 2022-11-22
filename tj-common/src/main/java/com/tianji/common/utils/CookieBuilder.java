@@ -31,6 +31,9 @@ public class CookieBuilder {
         this.response = response;
     }
 
+    /**
+     * 构建cookie，会对cookie值用UTF-8做URL编码，避免中文乱码
+     */
     public void build(){
         if (response == null) {
             log.error("response为null，无法写入cookie");
@@ -50,6 +53,11 @@ public class CookieBuilder {
         response.addCookie(cookie);
     }
 
+    /**
+     * 利用UTF-8对cookie值解码，避免中文乱码问题
+     * @param cookieValue cookie原始值
+     * @return 解码后的值
+     */
     public String decode(String cookieValue){
         return URLDecoder.decode(cookieValue, charset);
     }
