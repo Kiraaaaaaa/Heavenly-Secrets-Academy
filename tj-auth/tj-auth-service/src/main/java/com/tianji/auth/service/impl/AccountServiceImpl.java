@@ -2,12 +2,15 @@ package com.tianji.auth.service.impl;
 
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.user.LoginFormDTO;
+import com.tianji.auth.common.constants.JwtConstants;
 import com.tianji.auth.service.IAccountService;
 import com.tianji.auth.service.ILoginRecordService;
 import com.tianji.auth.util.JwtTool;
 import com.tianji.common.domain.dto.LoginUserDTO;
 import com.tianji.common.exceptions.BadRequestException;
+import com.tianji.common.utils.BooleanUtils;
 import com.tianji.common.utils.UserContext;
+import com.tianji.common.utils.WebUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,7 +48,7 @@ public class AccountServiceImpl implements IAccountService{
         // 2.1.设置记住我标记
         detail.setRememberMe(loginDTO.getRememberMe());
         // 2.2.生成token
-        String token = jwtTool.createToken(detail);
+        String token = generateToken(detail);
 
         // 3.计入登录信息表
         loginRecordService.loginSuccess(loginDTO.getCellPhone(), detail.getUserId());
@@ -53,9 +56,34 @@ public class AccountServiceImpl implements IAccountService{
         return token;
     }
 
+    private String generateToken(LoginUserDTO detail) {
+        // 2.2.生成access-token
+        String token = jwtTool.createToken(detail);
+        // 2.3.生成refresh-token，将refresh-token的JTI 保存到Redis
+        String refreshToken = jwtTool.createRefreshToken(detail);
+        // 2.4.将refresh-token写入用户cookie，并设置HttpOnly为true
+        int maxAge = BooleanUtils.isTrue(detail.getRememberMe()) ?
+                (int) JwtConstants.JWT_REMEMBER_ME_TTL.toSeconds() : -1;
+        WebUtils.cookieBuilder()
+                .name(JwtConstants.REFRESH_HEADER)
+                .value(refreshToken)
+                .maxAge(maxAge)
+                .httpOnly(true)
+                .build();
+        return token;
+    }
+
     @Override
     public void logout() {
         // 删除jti
         jwtTool.cleanJtiCache();
+    }
+
+    @Override
+    public String refreshToken(String refreshToken) {
+        // 1.校验refresh-token,校验JTI
+        LoginUserDTO userDTO = jwtTool.parseRefreshToken(refreshToken);
+        // 2.生成新的access-token、refresh-token
+        return generateToken(userDTO);
     }
 }

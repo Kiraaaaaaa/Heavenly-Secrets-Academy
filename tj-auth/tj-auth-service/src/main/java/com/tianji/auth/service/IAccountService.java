@@ -15,4 +15,6 @@ public interface IAccountService{
     String login(LoginFormDTO loginFormDTO, boolean isStaff);
 
     void logout();
+
+    String refreshToken(String refreshToken);
 }
