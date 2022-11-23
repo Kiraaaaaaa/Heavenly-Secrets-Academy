@@ -28,6 +28,8 @@ spring:
           uri: lb://auth-service
           predicates:
             - Path=/as/**
+          filters:
+            - PreserveHostHeader
         - id: ds
           uri: lb://data-service
           predicates:
