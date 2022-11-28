@@ -25,6 +25,7 @@ spring:
 tj:
   swagger:
     enable: true
+    enableResponseWrap: true
     package-path: com.tianji.exam.controller
     title: 智汇云课堂 - 考试中心接口文档
     description: 该服务提供题目管理、考试管理、数据统计等功能

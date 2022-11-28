@@ -24,6 +24,7 @@ spring:
 tj:
   swagger:
     enable: true
+    enableResponseWrap: true
     package-path: com.tianji.pay.controller
     title: 智汇云课堂 - 支付中心接口文档
     description: 该服务提供微信、支付宝等各种平台的支付、退款等功能

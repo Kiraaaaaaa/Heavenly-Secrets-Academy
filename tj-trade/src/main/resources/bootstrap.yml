@@ -22,6 +22,7 @@ spring:
 tj:
   swagger:
     enable: true
+    enableResponseWrap: true
     package-path: com.tianji.trade.controller
     title: 智汇云课堂 - 交易中心接口文档
     description: 该服务提供购物车、订单管理等功能

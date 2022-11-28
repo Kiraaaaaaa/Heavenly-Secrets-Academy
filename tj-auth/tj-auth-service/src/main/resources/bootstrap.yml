@@ -29,6 +29,7 @@ encrypt:
 tj:
   swagger:
     enable: true
+    enableResponseWrap: true
     package-path: com.tianji.auth.controller
     title: 智汇云课堂 - 权限微服务接口文档
     description: 该服务用于管理权限相关信息

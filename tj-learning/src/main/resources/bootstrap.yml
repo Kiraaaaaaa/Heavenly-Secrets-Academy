@@ -27,6 +27,7 @@ spring:
 tj:
   swagger:
     enable: true
+    enableResponseWrap: true
     package-path: com.tianji.learning.controller
     title: 智汇云课堂 - 学习中心接口文档
     description: 该服务包含用户学习的各种辅助功能

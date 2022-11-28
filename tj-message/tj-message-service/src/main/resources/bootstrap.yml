@@ -27,6 +27,7 @@ spring:
 tj:
   swagger:
     enable: true
+    enableResponseWrap: true
     package-path: com.tianji.message.controller
     title: 智汇云课堂 - 消息中心接口文档
     description: 该服务用于站内信、通知管理、短信发送等功能

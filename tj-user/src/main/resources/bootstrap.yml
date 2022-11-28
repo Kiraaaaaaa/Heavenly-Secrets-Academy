@@ -25,6 +25,7 @@ spring:
 tj:
   swagger:
     enable: true
+    enableResponseWrap: true
     package-path: com.tianji.user.controller
     title: 智汇云课堂 - 用户中心接口文档
     description: 该服务用户管理、用户信息管理
