@@ -272,6 +272,18 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Override
     public void deleteOrder(Long id) {
+        // 1.获取登录用户
+        Long userId = UserContext.getUser();
+        // 2.查询订单
+        Order order = getById(id);
+        if (order == null) {
+            return;
+        }
+        // 3.判断订单所属用户与当前登录用户是否一致
+        if(userId != order.getUserId()){
+            // 不一致，说明不是当前用户的订单，结束
+            throw new BadRequestException("不能删除他人订单");
+        }
         boolean success = removeById(id);
         if (success) {
             throw new DbException(OPERATE_FAILED);
