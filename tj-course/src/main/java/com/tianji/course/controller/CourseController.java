@@ -220,4 +220,10 @@ public class CourseController {
                                       @RequestParam(value = "name") String name){
         return courseService.checkName(name, id);
     }
+
+    @ApiOperation("查询课程基本信息、目录、学习进度")
+    @GetMapping("/{id}/catalogs")
+    public CourseAndSectionVO queryCourseAndCatalogById(@PathVariable("id") Long courseId){
+        return courseService.queryCourseAndCatalogById(courseId);
+    }
 }
