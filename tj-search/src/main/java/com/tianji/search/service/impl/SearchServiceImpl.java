@@ -275,14 +275,16 @@ public class SearchServiceImpl implements ISearchService {
         }
         LocalDateTime beginTime = query.getBeginTime();
         LocalDateTime endTime = query.getEndTime();
-        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery(CourseRepository.UPDATE_TIME);
-        if (beginTime != null) {
-            rangeQuery.gte(beginTime);
+        if(beginTime != null || endTime != null) {
+            RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery(CourseRepository.UPDATE_TIME);
+            if (beginTime != null) {
+                rangeQuery.gte(beginTime);
+            }
+            if (endTime != null) {
+                rangeQuery.lte(endTime);
+            }
+            queryBuilder.filter(rangeQuery);
         }
-        if (endTime != null) {
-            rangeQuery.lte(endTime);
-        }
-        queryBuilder.filter(rangeQuery);
         // 4.写入request
         request.source().query(queryBuilder);
     }
