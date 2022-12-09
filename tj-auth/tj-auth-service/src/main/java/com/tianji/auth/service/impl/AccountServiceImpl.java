@@ -9,7 +9,6 @@ import com.tianji.auth.util.JwtTool;
 import com.tianji.common.domain.dto.LoginUserDTO;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.utils.BooleanUtils;
-import com.tianji.common.utils.UserContext;
 import com.tianji.common.utils.WebUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +32,6 @@ public class AccountServiceImpl implements IAccountService{
 
     @Override
     public String login(LoginFormDTO loginDTO, boolean isStaff) {
-        if (UserContext.getUser() != null) {
-            // 已经登录的用户
-            throw new BadRequestException("请勿重复登录");
-        }
-
         // 1.查询并校验用户信息
         LoginUserDTO detail = userClient.queryUserDetail(loginDTO, isStaff);
         if (detail == null) {
@@ -77,6 +71,13 @@ public class AccountServiceImpl implements IAccountService{
     public void logout() {
         // 删除jti
         jwtTool.cleanJtiCache();
+        // 删除cookie
+        WebUtils.cookieBuilder()
+                .name(JwtConstants.REFRESH_HEADER)
+                .value("")
+                .maxAge(0)
+                .httpOnly(true)
+                .build();
     }
 
     @Override
