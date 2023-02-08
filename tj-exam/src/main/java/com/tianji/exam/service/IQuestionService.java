@@ -39,4 +39,6 @@ public interface IQuestionService extends IService<Question> {
     List<QuestionDTO> queryQuestionByBizId(Long bizId);
 
     Boolean checkNameValid(String name);
+
+    Map<Long, Integer> queryQuestionScores(List<Long> ids);
 }

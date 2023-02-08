@@ -73,6 +73,13 @@ public class QuestionController {
         return questionService.queryQuestionByIds(ids);
     }
 
+    @ApiOperation("查询题目分值")
+    @GetMapping("/scores")
+    public Map<Long, Integer> queryQuestionScores(
+            @ApiParam("要查询的题目的id集合") @RequestParam("ids") List<Long> ids){
+        return questionService.queryQuestionScores(ids);
+    }
+
     @ApiOperation("查询老师出题数量")
     @GetMapping("/numOfTeacher")
     public Map<Long, Integer> countSubjectNumOfTeacher(

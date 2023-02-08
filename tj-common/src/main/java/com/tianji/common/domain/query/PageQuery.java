@@ -36,9 +36,16 @@ public class PageQuery {
         return (pageNo - 1) * pageSize;
     }
 
-    public <T> Page<T> toMpPage() {
+    public <T> Page<T> toMpPage(OrderItem ... orderItems) {
         Page<T> page = new Page<>(pageNo, pageSize);
-        //是否排序
+        // 是否手动指定排序方式
+        if (orderItems != null && orderItems.length > 0) {
+            for (OrderItem orderItem : orderItems) {
+                page.addOrder(orderItem);
+            }
+            return page;
+        }
+        // 前端是否有排序字段
         if (StringUtils.isNotEmpty(sortBy)){
             OrderItem orderItem = new OrderItem();
             orderItem.setAsc(isAsc);

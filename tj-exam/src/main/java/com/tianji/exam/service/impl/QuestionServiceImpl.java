@@ -242,4 +242,15 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .eq(Question::getName, name)
                 .count()<=0;
     }
+
+    @Override
+    public Map<Long, Integer> queryQuestionScores(List<Long> ids) {
+        // 1.根据id查询题目
+        List<Question> questions = listByIds(ids);
+        // 2.判空
+        if (CollUtils.isEmpty(questions)) {
+            return CollUtils.emptyMap();
+        }
+        return questions.stream().collect(Collectors.toMap(Question::getId, Question::getScore));
+    }
 }
