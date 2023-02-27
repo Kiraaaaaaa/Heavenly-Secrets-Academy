@@ -74,6 +74,10 @@ spring:
           uri: lb://remark-service
           predicates:
             - Path=/rs/**
+        - id: prs
+          uri: lb://promotion-service
+          predicates:
+            - Path=/prs/**
       default-filters:
         - StripPrefix=1
       globalcors: # 全局的跨域处理
