@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -22,11 +23,11 @@ public class CategoryCache {
         return categoryCaches.get("CATEGORY", key -> {
             // 1.从CategoryClient查询
             List<CategoryBasicDTO> list = categoryClient.getAllOfOneLevel();
-            if(list == null || list.isEmpty()){
+            if (list == null || list.isEmpty()) {
                 return CollUtils.emptyMap();
             }
             // 2.转换数据
-            return list.stream().collect(Collectors.toMap(CategoryBasicDTO::getId, c -> c));
+            return list.stream().collect(Collectors.toMap(CategoryBasicDTO::getId, Function.identity()));
         });
     }
 
@@ -77,7 +78,7 @@ public class CategoryCache {
             CategoryBasicDTO lv3 = map.get(lv3Id);
             CategoryBasicDTO lv2 = map.get(lv3.getParentId());
             CategoryBasicDTO lv1 = map.get(lv2.getParentId());
-            list.add(lv1.getName() + lv2.getName() + lv3.getName());
+            list.add(lv1.getName() + "/" + lv2.getName() + "/" + lv3.getName());
         }
         return list;
     }
@@ -87,6 +88,6 @@ public class CategoryCache {
         CategoryBasicDTO lv3 = map.get(lv3Id);
         CategoryBasicDTO lv2 = map.get(lv3.getParentId());
         CategoryBasicDTO lv1 = map.get(lv2.getParentId());
-        return lv1.getName() + lv2.getName() + lv3.getName();
+        return lv1.getName() + "/" + lv2.getName() + "/" + lv3.getName();
     }
 }
