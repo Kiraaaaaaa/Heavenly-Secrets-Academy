@@ -59,7 +59,7 @@ public class AccountServiceImpl implements IAccountService{
         int maxAge = BooleanUtils.isTrue(detail.getRememberMe()) ?
                 (int) JwtConstants.JWT_REMEMBER_ME_TTL.toSeconds() : -1;
         WebUtils.cookieBuilder()
-                .name(JwtConstants.REFRESH_HEADER)
+                .name(detail.getRoleId() == 2 ? JwtConstants.REFRESH_HEADER : JwtConstants.ADMIN_REFRESH_HEADER)
                 .value(refreshToken)
                 .maxAge(maxAge)
                 .httpOnly(true)
