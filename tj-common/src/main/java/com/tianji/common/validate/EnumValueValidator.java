@@ -1,6 +1,5 @@
 package com.tianji.common.validate;
 
-import com.tianji.common.enums.BaseEnum;
 import com.tianji.common.utils.ArrayUtils;
 import com.tianji.common.validate.annotations.EnumValid;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +12,7 @@ import javax.validation.ConstraintValidatorContext;
  *
  **/
 @Slf4j
-public class EnumValidator implements ConstraintValidator<EnumValid, BaseEnum> {
+public class EnumValueValidator implements ConstraintValidator<EnumValid, Integer> {
 
     private int[] enums = null;
 
@@ -24,9 +23,9 @@ public class EnumValidator implements ConstraintValidator<EnumValid, BaseEnum> {
     }
 
     @Override
-    public boolean isValid(BaseEnum em, ConstraintValidatorContext context) {
+    public boolean isValid(Integer value, ConstraintValidatorContext context) {
         // 不做空校验
-        if(em == null){
+        if(value == null){
             return true;
         }
         //没有配置枚举值不校验
@@ -34,7 +33,7 @@ public class EnumValidator implements ConstraintValidator<EnumValid, BaseEnum> {
             return true;
         }
         for (int e : enums) {
-            if (e == em.getValue()) {
+            if (e == value) {
                 return true;
             }
         }
