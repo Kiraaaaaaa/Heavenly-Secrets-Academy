@@ -27,5 +27,5 @@ public interface RegexConstants extends RegexPool {
     /**
      * 优惠券兑换码模板
      */
-    String COUPON_CODE_PATTERN = "^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$";
+    String COUPON_CODE_PATTERN = "^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8,10}$";
 }

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.autoconfigure.redisson.annotations.Lock;
+import com.tianji.common.autoconfigure.redisson.enums.LockStrategy;
 import com.tianji.common.constants.MqConstants;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
@@ -52,7 +53,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
     private final RabbitMqHelper rabbitMqHelper;
 
     @Override
-    @Lock(formatter = PayConstants.RedisKeyFormatter.PAY_APPLY, time = 3)
+    @Lock(name = PayConstants.RedisKeyFormatter.PAY_APPLY, leaseTime = 3, autoUnlock = false)
     public String applyPayOrder(PayApplyDTO payApplyDTO) {
         log.debug("准备创建支付单，业务订单号：{}", payApplyDTO.getBizOrderNo());
         // 1.选择支付渠道
@@ -211,7 +212,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
     }
 
     @Override
-    @Lock(formatter = PayConstants.RedisKeyFormatter.PAY_ORDER_CHECK_TASK)
+    @Lock(name = PayConstants.RedisKeyFormatter.PAY_ORDER_CHECK_TASK, lockStrategy = LockStrategy.SKIP_AFTER_RETRY_TIMEOUT)
     public void checkPayOrder(PayOrder payOrder) {
         // 1.选择支付渠道
         IPayService payService = payServiceChannels.get(payOrder.getPayChannelCode());

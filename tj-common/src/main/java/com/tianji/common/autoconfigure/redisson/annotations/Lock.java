@@ -1,5 +1,8 @@
 package com.tianji.common.autoconfigure.redisson.annotations;
 
+import com.tianji.common.autoconfigure.redisson.enums.LockStrategy;
+import com.tianji.common.autoconfigure.redisson.enums.LockType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -8,44 +11,43 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 分布式锁
- *
- * @ClassName Lock
- * @author wusongsong
- * <p>
- * 加锁操作,
- * 抢夺执行权。
- * unlock默认为true 方法执行结束会主动释放锁。
- * 未检测到主动释放锁，则会在1分钟(默认)后自动释放锁.
- * key: 锁的KEY。必须填写。不可于其他锁的KEY重复。
- * time: 锁时间。默认为1
- * unit: 锁时间单位。默认为分钟.
- * unlock: 是否主动解锁。默认为是
  **/
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Lock {
 
+    /**
+     * 加锁key的表达式，支持SPEL表达式
+     */
+    String name();
 
-    //加锁key的表达式，支持表达式
-    String formatter();
+    /**
+     * 阻塞超时时长，不指定 waitTime 则按照Redisson默认时长
+     */
+    long waitTime() default 1;
 
-    //加锁时长
-    long time() default 5;
+    /**
+     * 锁自动释放时长，默认是-1，其实是30秒 + watchDog模式
+     */
+    long leaseTime() default -1;
 
-    //阻塞超时时间，默认2分钟,当block为true的时候生效
-    long waitTime() default 120;
+    /**
+     * 时间单位，默认为秒
+     */
+    TimeUnit timeUnit() default TimeUnit.SECONDS;
 
-    //阻塞超时时间单位，默认s
-    TimeUnit wtUnit() default TimeUnit.SECONDS;
+    /**
+     * 如果设定了false,则方法结束不释放锁，而是等待leaseTime后自动释放
+     */
+    boolean autoUnlock() default true;
 
-    //加锁时间单位
-    TimeUnit unit() default TimeUnit.SECONDS;
+    /**
+     * 锁的类型，包括：可重入锁、公平锁、读锁、写锁
+     */
+    LockType lockType() default LockType.DEFAULT;
 
-    //方法访问完后要不要解锁，默认不解锁
-    boolean unlock() default false;
-
-    //如果设定了true,将等待处理后进行处理
-    boolean block() default false;
-
-
+    /**
+     * 锁策略，包括5种，默认策略是 不断尝试获取锁，直到成功或超时，超时后抛出异常
+     */
+    LockStrategy lockStrategy() default LockStrategy.FAIL_AFTER_RETRY_TIMEOUT;
 }

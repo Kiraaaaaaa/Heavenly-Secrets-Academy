@@ -96,7 +96,7 @@ public class RefundOrderServiceImpl extends ServiceImpl<RefundOrderMapper, Refun
         }
     }
 
-    @Lock(formatter = PayConstants.RedisKeyFormatter.REFUND_APPLY, time = 10)
+    @Lock(name = PayConstants.RedisKeyFormatter.REFUND_APPLY, leaseTime = 10, autoUnlock = false)
     private RefundOrder checkIdempotent(RefundApplyDTO refundApplyDTO) {
         // 1.查询出退款单对应的支付单
         PayOrder payOrder = payOrderService.queryByBizOrderNo(refundApplyDTO.getBizOrderNo());

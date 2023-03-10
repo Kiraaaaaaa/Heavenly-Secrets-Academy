@@ -252,7 +252,7 @@ public class NotifyServiceImpl implements INotifyService {
     }
 
     @Nullable
-    @Lock(formatter = PayConstants.RedisKeyFormatter.PAY_NOTIFY)
+    @Lock(name = PayConstants.RedisKeyFormatter.PAY_NOTIFY)
     private PayOrder checkNotifyData(Long tradingOrderNo, Integer amount, LocalDateTime successTime) {
         // 1.数据非空校验
         if (tradingOrderNo == null || amount == null) {
