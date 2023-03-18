@@ -63,7 +63,7 @@ public class LockAspect {
     /**
      * SPEL的正则规则
      */
-    private static final Pattern pattern = Pattern.compile("(\\#\\{([^\\}]*)\\})");
+    private static final Pattern pattern = Pattern.compile("\\#\\{([^\\}]*)\\}");
     /**
      * 方法参数解析器
      */

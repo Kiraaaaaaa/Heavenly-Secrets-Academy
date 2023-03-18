@@ -57,7 +57,11 @@ public class MqConfig implements EnvironmentAware{
 
     @Bean
     public MessageConverter messageConverter(ObjectMapper mapper){
-        return new Jackson2JsonMessageConverter(mapper);
+        // 1.定义消息转换器
+        Jackson2JsonMessageConverter jackson2JsonMessageConverter = new Jackson2JsonMessageConverter(mapper);
+        // 2.配置自动创建消息id，用于识别不同消息
+        jackson2JsonMessageConverter.setCreateMessageIds(true);
+        return jackson2JsonMessageConverter;
     }
 
     /**
