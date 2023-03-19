@@ -1,7 +1,9 @@
 package com.tianji.common.autoconfigure.swagger;
 
+import cn.hutool.core.convert.ConverterRegistry;
 import com.fasterxml.classmate.TypeResolver;
 import com.tianji.common.domain.R;
+import com.tianji.common.utils.TjTemporalConverter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +17,7 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 
 @Configuration
 @ConditionalOnProperty(prefix = "tj.swagger", name = "enable",havingValue = "true")
@@ -60,5 +63,9 @@ public class Knife4jConfiguration {
     public BaseSwaggerResponseBuilderPlugin baseSwaggerResponseBuilderPlugin(){
         return new BaseSwaggerResponseBuilderPlugin();
     }
-
+    {
+        // hutool的日期转换器加载
+        ConverterRegistry converterRegistry = ConverterRegistry.getInstance();
+        converterRegistry.putCustom(LocalDateTime.class, new TjTemporalConverter(LocalDateTime.class));
+    }
 }
