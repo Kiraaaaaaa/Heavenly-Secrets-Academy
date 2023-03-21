@@ -91,11 +91,6 @@ public class OrderDetail implements Serializable {
     private Integer refundStatus;
 
     /**
-     * 优惠券id
-     */
-    private Long couponId;
-
-    /**
      * 支付渠道名称
      */
     private String payChannel;

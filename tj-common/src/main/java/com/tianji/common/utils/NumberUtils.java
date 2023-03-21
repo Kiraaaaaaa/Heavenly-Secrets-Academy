@@ -130,4 +130,19 @@ public class NumberUtils extends NumberUtil {
         }
         return number.toString();
     }
+
+
+    public static String scaleToStr(Integer num, int offset) {
+        // 1.计算位数
+        int m = (int) Math.pow(10, offset);
+        // 2.计算商
+        int s = num / m;
+        // 3.计算余数
+        int y = num % m;
+        if (y == 0) {
+            return Integer.toString(s);
+        }
+        // 2.计算余数
+        return s + "." + y;
+    }
 }
