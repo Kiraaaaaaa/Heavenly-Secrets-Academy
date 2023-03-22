@@ -188,6 +188,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (CollUtils.isEmpty(courseInfos)) {
             throw new BizIllegalException(TradeErrorInfo.COURSE_NOT_EXISTS);
         }
+        List<OrderCourseVO> courses = BeanUtils.copyList(courseInfos, OrderCourseVO.class);
         // 2.计算总价
         int total = courseInfos.stream().mapToInt(CourseSimpleInfoDTO::getPrice).sum();
         // TODO 3.计算折扣
@@ -199,6 +200,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         vo.setOrderId(orderId);
         vo.setTotalAmount(total);
         vo.setDiscountAmount(discountAmount);
+        vo.setCourses(courses);
         return vo;
     }
 
