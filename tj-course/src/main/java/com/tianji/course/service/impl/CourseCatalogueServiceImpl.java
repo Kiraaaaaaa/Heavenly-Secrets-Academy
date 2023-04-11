@@ -60,10 +60,21 @@ public class CourseCatalogueServiceImpl extends ServiceImpl<CourseCatalogueMappe
         if (CollUtils.isEmpty(courseCatalogues)) {
             return null;
         }
-
+        //3.查询课程目录对应题目数量
+        Set<Long> ids = courseCatalogues.stream().map(CourseCatalogue::getId).collect(Collectors.toSet());
+        List<QuestionBizDTO> questionBizDTOS = examClient.queryQuestionIdsByBizIds(ids);
+        //4.转化目录id和题目id、分数对应关系
+        Map<Long, Long> cataIdAndNumMap =
+                CollUtils.isEmpty(questionBizDTOS)
+                        ? new HashMap<>() :
+                        questionBizDTOS
+                                .stream()
+                                .collect(Collectors.groupingBy(QuestionBizDTO::getBizId, Collectors.counting()));
+        // 5.组织树结构并返回
         return TreeDataUtils.parseToTree(courseCatalogues, CatalogueDTO.class, (courseCatalogue, cataVO)->{
             cataVO.setMediaName(courseCatalogue.getVideoName());
             cataVO.setIndex(courseCatalogue.getCIndex());
+            cataVO.setSubjectNum(cataIdAndNumMap.getOrDefault(courseCatalogue.getId(), 0L).intValue());
         }, new CourseCatalogDataWrapper());
     }
 
