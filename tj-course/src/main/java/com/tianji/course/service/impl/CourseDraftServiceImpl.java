@@ -404,10 +404,7 @@ public class CourseDraftServiceImpl extends ServiceImpl<CourseDraftMapper, Cours
 
         }
         //5.课程上架mq
-        rabbitMqHelper.sendAsyn(MqConstants.Exchange.COURSE_EXCHANGE,
-                MqConstants.Key.COURSE_UP_KEY,
-                id,
-                200L);
+        rabbitMqHelper.send(MqConstants.Exchange.COURSE_EXCHANGE, MqConstants.Key.COURSE_UP_KEY, id);
     }
 
     @Override

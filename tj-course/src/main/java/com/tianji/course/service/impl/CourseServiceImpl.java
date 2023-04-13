@@ -523,7 +523,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
     private void sendFinishedCourse(List<Course> finishedCourse) {
         //1.遍历发送课程完结mq
         for (Course course : finishedCourse) {
-            rabbitMqHelper.sendAsyn(MqConstants.Exchange.COURSE_EXCHANGE,
+            rabbitMqHelper.sendAsync(MqConstants.Exchange.COURSE_EXCHANGE,
                     MqConstants.Key.COURSE_EXPIRE_KEY,
                     course.getId());
         }
