@@ -93,6 +93,16 @@
             <artifactId>seata-spring-boot-starter</artifactId>
             <groupId>io.seata</groupId>
             <version>${seata-version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun</groupId>
+                    <artifactId>jconsole</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.xuxueli</groupId>
