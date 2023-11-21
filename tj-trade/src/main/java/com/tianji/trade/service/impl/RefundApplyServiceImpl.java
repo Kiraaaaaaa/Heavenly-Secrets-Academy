@@ -446,7 +446,7 @@ public class RefundApplyServiceImpl extends ServiceImpl<RefundApplyMapper, Refun
         if (status == RefundResultDTO.SUCCESS) {
             // 4.1.查询子订单信息
             OrderDetail detail = detailService.getById(refundApply.getOrderDetailId());
-            // 4.2.发送MQ消息，通知报名成功
+            // 4.2.发送MQ消息，通知退款成功
             rabbitMqHelper.send(
                     MqConstants.Exchange.ORDER_EXCHANGE,
                     MqConstants.Key.ORDER_REFUND_KEY,

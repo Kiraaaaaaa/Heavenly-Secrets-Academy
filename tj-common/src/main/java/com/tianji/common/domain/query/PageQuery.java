@@ -6,6 +6,7 @@ import com.tianji.common.constants.Constant;
 import com.tianji.common.utils.StringUtils;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
