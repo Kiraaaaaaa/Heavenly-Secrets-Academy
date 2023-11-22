@@ -94,10 +94,7 @@ public class LearningRecordServiceImpl extends ServiceImpl<LearningRecordMapper,
         }
         //2.查询当前完成小节是否已经达到全部小节数量
         CourseFullInfoDTO cinfo = courseClient.getCourseInfoById(lesson.getCourseId(), false, false);
-        System.out.println(cinfo);
-        System.out.println(lesson);
         boolean allLearned = lesson.getLearnedSections() + 1 >= cinfo.getSectionNum();
-        System.out.println(allLearned);
         //3.更新课表
         boolean update = lessonService.lambdaUpdate()
                 //由于购买课程后就会初始化lesson，且初始化已学小节为0，所以如果是第一次观看视频，则设置lesson为正在学习
