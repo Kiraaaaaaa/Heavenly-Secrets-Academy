@@ -354,10 +354,7 @@ public class LearningLessonServiceImpl extends ServiceImpl<LearningLessonMapper,
         }).collect(Collectors.toList());
 
         //5.封装pageVo
-        planPageVO.setTotal(Long.parseLong(String.valueOf(records.size())));
-        planPageVO.setList(planVOS);
-
-        return planPageVO;
+        return planPageVO.pageInfo(lessonPage.getTotal(), lessonPage.getPages(), planVOS);
     }
 
     //生成userId对应courseId的wrapper，供查询lesson使用
