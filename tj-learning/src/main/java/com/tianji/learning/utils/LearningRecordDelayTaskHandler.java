@@ -18,8 +18,7 @@ import javax.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.DelayQueue;
+import java.util.concurrent.*;
 
 /**
  * 延迟阻塞队列工具
@@ -40,6 +39,11 @@ public class LearningRecordDelayTaskHandler {
     private final LearningRecordMapper recordMapper;
     private final ILearningLessonService lessonService;
     private static volatile boolean begin = true;
+
+    //创建线程池
+    ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(12, 12, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>(10));
+
+
     //PostConstruct：在此类初始化后，并在属性被输入之后执行
     @PostConstruct
     //使用该工具类会创建一个新线程，来执行handleDelayTask方法
@@ -60,31 +64,37 @@ public class LearningRecordDelayTaskHandler {
                 // 1.尝试获取任务
                 DelayTask<RecordTaskData> task = queue.take();
                 log.debug("获取到要处理的播放记录任务");
-                RecordTaskData data = task.getData(); //由于是阻塞队列(不会返回null)，拿不到元素就会阻塞在这里一直等
-                // 2.读取Redis缓存
-                LearningRecord record = readRecordCache(data.getLessonId(), data.getSectionId());
-                log.info("从延迟队列获取到学习记录数据:{}", data);
-                log.info("从Redis缓存中获取到学习记录数据:{}", record);
-                if (record == null) {
-                    continue;
-                }
-                // 3.比较数据
-                if(!Objects.equals(data.getMoment(), record.getMoment())){
-                    // 4.如果不一致，播放进度在变化，无需持久化
-                    continue;
-                }
-                // 5.如果一致，证明用户离开了视频，需要持久化
-                // 5.1.更新学习记录
-                record.setFinished(null);
-                recordMapper.updateById(record);
-                // 5.2.更新课表
-                LearningLesson lesson = new LearningLesson();
-                lesson.setId(data.getLessonId());
-                lesson.setLatestSectionId(data.getSectionId());
-                lesson.setLatestLearnTime(LocalDateTime.now());
-                lessonService.updateById(lesson);
+                //
+                poolExecutor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        RecordTaskData data = task.getData(); //由于是阻塞队列(不会返回null)，拿不到元素就会阻塞在这里一直等
+                        // 2.读取Redis缓存
+                        LearningRecord record = readRecordCache(data.getLessonId(), data.getSectionId());
+                        log.info("从延迟队列获取到学习记录数据:{}", data);
+                        log.info("从Redis缓存中获取到学习记录数据:{}", record);
+                        if (record == null) {
+                            return;
+                        }
+                        // 3.比较数据
+                        if(!Objects.equals(data.getMoment(), record.getMoment())){
+                            // 4.如果不一致，播放进度在变化，无需持久化
+                            return;
+                        }
+                        // 5.如果一致，证明用户离开了视频，需要持久化
+                        // 5.1.更新学习记录
+                        record.setFinished(null);
+                        recordMapper.updateById(record);
+                        // 5.2.更新课表
+                        LearningLesson lesson = new LearningLesson();
+                        lesson.setId(data.getLessonId());
+                        lesson.setLatestSectionId(data.getSectionId());
+                        lesson.setLatestLearnTime(LocalDateTime.now());
+                        lessonService.updateById(lesson);
 
-                log.debug("准备持久化学习记录信息");
+                        log.debug("准备持久化学习记录信息");
+                    }
+                });
             } catch (Exception e) {
                 log.error("处理播放记录任务发生异常", e);
             }
