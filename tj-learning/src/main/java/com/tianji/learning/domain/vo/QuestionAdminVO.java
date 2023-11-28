@@ -15,6 +15,8 @@ public class QuestionAdminVO {
     private String title;
     @ApiModelProperty("互动问题描述")
     private String description;
+    @ApiModelProperty("教师名字")
+    private String teacherName;
     @ApiModelProperty("回答数量，0表示没有回答")
     private Integer answerTimes;
     @ApiModelProperty(value = "创建时间", example = "2022-7-18 19:52:36")
@@ -26,6 +28,8 @@ public class QuestionAdminVO {
 
     @ApiModelProperty("提问者昵称")
     private String userName;
+    @ApiModelProperty("提问者头像")
+    private String userIcon;
     @ApiModelProperty("课程名称")
     private String courseName;
     @ApiModelProperty("章名称")

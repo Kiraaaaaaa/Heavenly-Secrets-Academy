@@ -29,7 +29,7 @@ public class CourseController {
         return searchService.queryCoursesForPortal(query);
     }
 
-    @ApiIgnore
+    // @ApiIgnore
     @GetMapping("/name")
     public List<Long> queryCoursesIdByName(@RequestParam("keyword") String keyword){
         return searchService.queryCoursesIdByName(keyword);

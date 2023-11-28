@@ -37,4 +37,8 @@ public class ReplyVO {
     private Integer likedTimes;
     @ApiModelProperty("目标用户名字")
     private String targetUserName;
+
+    //自行添加的字段
+    private Long targetReplyId;
+    private Long targetUserId;
 }

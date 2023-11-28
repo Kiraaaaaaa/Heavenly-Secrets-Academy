@@ -8,6 +8,7 @@ import com.tianji.learning.domain.vo.QuestionVO;
 import com.tianji.learning.service.IInteractionQuestionService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,7 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping("/questions")
 @RequiredArgsConstructor
-@Api(tags = "问题相关接口")
+@Api(tags = "用户端问题相关接口")
 public class InteractionQuestionController {
 
     private final IInteractionQuestionService questionService;
@@ -55,7 +56,7 @@ public class InteractionQuestionController {
 
     @ApiOperation("查询问题详情-用户端")
     @GetMapping("{id}")
-    public QuestionVO queryQuestionById(@PathVariable("id") Long id){
+    public QuestionVO queryQuestionById(@ApiParam(value = "问题id", example = "1") @PathVariable("id") Long id){
         return questionService.queryQuestionById(id);
     }
 }

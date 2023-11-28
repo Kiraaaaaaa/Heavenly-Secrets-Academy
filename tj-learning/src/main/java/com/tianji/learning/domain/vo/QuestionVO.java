@@ -29,6 +29,6 @@ public class QuestionVO {
     private String latestReplyContent;
     @ApiModelProperty("最新的回答者昵称")
     private String latestReplyUser;
-    @ApiModelProperty("问题详情")
+    @ApiModelProperty("问题描述")
     private String description;
 }
