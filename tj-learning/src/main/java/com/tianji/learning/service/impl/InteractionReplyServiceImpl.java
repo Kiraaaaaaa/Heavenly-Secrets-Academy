@@ -2,8 +2,10 @@ package com.tianji.learning.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.api.client.remark.RemarkClient;
 import com.tianji.api.client.user.UserClient;
 import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.domain.dto.PageDTO;
@@ -32,6 +34,9 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.tianji.common.constants.Constant.DATA_FIELD_NAME_CREATE_TIME;
+import static com.tianji.common.constants.Constant.DATA_FIELD_NAME_LIKED_TIME;
+
 /**
  * <p>
  * 互动问题的回答或评论 服务实现类
@@ -43,9 +48,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class InteractionReplyServiceImpl extends ServiceImpl<InteractionReplyMapper, InteractionReply> implements IInteractionReplyService {
-
     private final InteractionQuestionMapper questionMapper;
     private final UserClient userClient;
+    private final RemarkClient remarkClient;
 
     @Override
     public void addReplyOrAnswer(ReplyDTO dto) {
@@ -92,29 +97,32 @@ public class InteractionReplyServiceImpl extends ServiceImpl<InteractionReplyMap
                 .eq(InteractionReply::getAnswerId, query.getAnswerId() == null ? 0L : query.getAnswerId())
                 //不查询被隐藏的回答或者评论 todo //一个待优化的地方，这里是不查询出被隐藏的回答或者评论，优点是提高了数据库效率，缺点就是子级如果要保留，那他将无法获取被评论者的id。如果想要连同子级的评论一起隐藏，那么就需要在这里查出此条，在vo处排除掉父级是此条的评论
                 .eq(!isAdmin, InteractionReply::getHidden, Boolean.FALSE)
-                //点赞倒叙
-                .page(query.toMpPage("liked_times", false));
+                //先按照点赞数量倒叙，相同点赞数量再按照创建时间倒叙
+                .page(query.toMpPage(new OrderItem(DATA_FIELD_NAME_LIKED_TIME, false), new OrderItem(DATA_FIELD_NAME_CREATE_TIME, false)));
         List<InteractionReply> replyList = page.getRecords();
         if(CollUtils.isEmpty(replyList)){
             return PageDTO.empty(page);
         }
         //2.远程批量查询用户信息
         Set<Long> userIds = new HashSet<>();
+        Set<Long> replyIds = new HashSet<>();
         for (InteractionReply rep : replyList) {
-            //添加回复者id
+            //2.1添加回复者id
             userIds.add(rep.getUserId());
-            //添加被回复者id(如果只添加回复者id，可能会丢失回复者信息，比如查询评论列表时，replyList的数据是该回答下的，但回答者的信息会丢失)
+            //2.2添加被回复者id(如果只添加回复者id，可能会丢失回复者信息，比如查询评论列表时，replyList的数据是该回答下的，但回答者的信息会丢失)
             if(query.getAnswerId()!=null){
                 userIds.add(rep.getTargetUserId());
             }
+            //2.3添加评论的id
+            replyIds.add(rep.getId());
         }
         Map<Long, UserDTO> userDTOMap = userClient.queryUserByIds(userIds).stream().collect(Collectors.toMap(UserDTO::getId, c -> c));
-        //3.查询用户点赞状态 todo
-        // Set<Long> bizLiked = remarkClient.isBizLiked(CollUtils.singletonList(id));
-        //3.封装vo
+        //3.查询用户点赞状态(入参是当前分页的评论id集合，出参是当前分页被点过赞的评论id集合)
+        Set<Long> bizLiked = remarkClient.getLikedStatusByBizList(replyIds);
+        //4.封装vo
         List<ReplyVO> vos = BeanUtils.copyList(replyList, ReplyVO.class);
         List<ReplyVO> collect = vos.stream().map(i -> {
-            //3.1设置用户信息
+            //4.1设置用户信息
             //如果该回答或评论非匿名则设置用户信息
             if (!i.getAnonymity() || isAdmin) {
                 UserDTO userDTO = userDTOMap.get(i.getUserId());
@@ -124,6 +132,7 @@ public class InteractionReplyServiceImpl extends ServiceImpl<InteractionReplyMap
                     i.setUserType(userDTO.getType());
                 }
             }
+            //4.2设置被评论对象用户信息
             //如果该评论的上一级还是评论，那么设置该评论的评论对象用户信息(注意不是字段一定不要是TargetUserId的值，必须是TargetReplyId才能表示评论的对象也是评论)
             //由于我是先将replyList复制到了List<ReplyVO>，因此丢失了上级用户id，所以自己新增了TargetReplyId和TargetUserId字段
             if (i.getTargetReplyId() != 0) {
@@ -138,8 +147,8 @@ public class InteractionReplyServiceImpl extends ServiceImpl<InteractionReplyMap
                     }
                 }
             }
-            //3.2设置用户点赞信息
-            // i.setLiked(bizLiked.contains(i.getId()));
+            //4.3设置用户点赞信息(当前用户是否对该评论点过赞)
+            i.setLiked(bizLiked.contains(i.getId()));
             return i;
         }).collect(Collectors.toList());
         return PageDTO.of(page, collect);

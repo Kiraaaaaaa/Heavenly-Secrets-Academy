@@ -1,4 +1,4 @@
-package com.tianji.remark.domain.dto;
+package com.tianji.api.dto.remark;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
