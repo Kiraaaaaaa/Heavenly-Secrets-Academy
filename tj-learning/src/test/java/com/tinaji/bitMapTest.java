@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @SpringBootTest(classes = LearningApplication.class)
@@ -20,7 +21,7 @@ public class bitMapTest {
      */
     @Test
     public void test(){
-        Boolean testBitMap = redisTemplate.opsForValue().setBit("testBitMap", 0, true);
+        Boolean testBitMap = redisTemplate.opsForValue().setBit("testBitMap", 1, true);
         System.out.println("原始值：" + testBitMap);
         if(testBitMap){
             System.out.println("已经签到过了");
@@ -41,5 +42,24 @@ public class bitMapTest {
                 BitFieldSubCommands.create().get(BitFieldSubCommands.BitFieldType.unsigned(3)).valueAt(0)
         );
         System.out.println(list.get(0));
+    }
+
+    /**
+     * 测试bitMap返回的Long转List数组
+     */
+    @Test
+    public void test2(){
+        List<Long> list = redisTemplate.opsForValue().bitField(
+                "testBitMap",
+                //unsigned则为无符号数
+                BitFieldSubCommands.create().get(BitFieldSubCommands.BitFieldType.unsigned(3)).valueAt(0)
+        );
+        Long aLong = list.get(0);
+        String s = Long.toBinaryString(aLong);
+        ArrayList<Integer> arr = new ArrayList<>(31);
+        for (char c : s.toCharArray()) {
+            arr.add(c == '1'?1:0);
+        }
+        System.out.println(arr);
     }
 }

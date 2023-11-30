@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Deque;
+
 @Api(tags = "签到相关接口")
 @RestController
 @RequestMapping("sign-records")
@@ -21,5 +23,11 @@ public class SignRecordController {
     @ApiOperation("签到功能接口")
     public SignResultVO addSignRecords(){
         return recordService.addSignRecords();
+    }
+
+    @GetMapping
+    @ApiOperation("查询签到记录接口")
+    public Deque<Integer> querySignRecords(){
+        return recordService.querySignRecords();
     }
 }

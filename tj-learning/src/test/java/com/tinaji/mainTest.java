@@ -1,4 +1,5 @@
 package com.tinaji;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.tianji.api.cache.CategoryCache;
 import com.tianji.api.client.course.CatalogueClient;
 import com.tianji.api.client.course.CourseClient;
@@ -9,12 +10,18 @@ import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
+import com.tianji.common.utils.UserContext;
 import com.tianji.learning.LearningApplication;
 import com.tianji.learning.domain.po.InteractionQuestion;
 import com.tianji.learning.domain.po.InteractionReply;
+import com.tianji.learning.domain.po.PointsRecord;
+import com.tianji.learning.domain.vo.PointsStatisticsVO;
 import com.tianji.learning.domain.vo.QuestionAdminVO;
+import com.tianji.learning.enums.PointsRecordType;
 import com.tianji.learning.service.IInteractionQuestionService;
 import com.tianji.learning.service.IInteractionReplyService;
+import com.tianji.learning.service.IPointsRecordService;
+import com.tianji.learning.service.impl.PointsRecordServiceImpl;
 import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +46,8 @@ public class mainTest {
     CategoryCache categoryCache;
     @Autowired
     CatalogueClient catalogueClient;
+    @Autowired
+    IPointsRecordService recordService;
     @Test
     public void testx(){
         Long id = 1729192645861388290L;
@@ -112,5 +121,53 @@ public class mainTest {
         String categoryNames = categoryCache.getCategoryNames(categoryIds);
         vo.setCategoryName(categoryNames);
         System.out.println(vo);
+    }
+
+    /**
+     * 测试查询用户的积分值上限
+     */
+    @Test
+    public void addPointsRecord() {
+        //1.查询该类型积分是否有当日上限
+        if(1 > 0){
+            //1.1查询该用户当月此类型积分获取是否上限
+            QueryWrapper<PointsRecord> wrapper = new QueryWrapper<>();
+            wrapper.select("user_id, type, SUM(points) AS points");
+            wrapper.eq("user_id", 1);
+            wrapper.eq("type", 1);
+            wrapper.groupBy("user_id", "type");
+            //查询数据库
+            PointsRecord record = recordService.getOne(wrapper);
+            System.out.println(record);
+        }
+        //2.新增积分记录
+    }
+
+    /**
+     * 测试查询用户今日每种积分获得情况
+     * @return
+     */
+    @Test
+    public void queryMyPointsToday() {
+        Long user = UserContext.getUser();
+        QueryWrapper<PointsRecord> wrapper = new QueryWrapper<>();
+        wrapper.select("user_id, type, SUM(points) AS points");
+        wrapper.eq("user_id", 2);
+        wrapper.groupBy("user_id", "type");
+        List<PointsRecord> records = recordService.list(wrapper);
+        Map<PointsRecordType, PointsRecord> map = records.stream().collect(Collectors.toMap(PointsRecord::getType, c -> c));
+        ArrayList<PointsStatisticsVO> list = new ArrayList<>();
+        for (PointsRecordType type : PointsRecordType.values()) {
+            PointsStatisticsVO vo = new PointsStatisticsVO();
+            if(map.containsKey(type)){
+                vo.setPoints(map.get(type).getPoints());
+            }else{
+                vo.setPoints(0);
+            }
+            vo.setType(type.getDesc());
+            vo.setMaxPoints(type.getMaxPoints());
+            list.add(vo);
+        }
+        System.out.println(list);
     }
 }

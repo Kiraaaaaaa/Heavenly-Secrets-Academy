@@ -3,9 +3,12 @@ package com.tianji.learning.domain.vo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 @ApiModel(description = "签到结果")
 public class SignResultVO {
     @ApiModelProperty("连续签到天数")
