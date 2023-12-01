@@ -12,5 +12,4 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @since 2023-11-29
  */
 public interface PointsBoardMapper extends BaseMapper<PointsBoard> {
-
 }

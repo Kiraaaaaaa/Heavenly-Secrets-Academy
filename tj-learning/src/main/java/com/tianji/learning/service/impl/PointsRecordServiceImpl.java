@@ -58,7 +58,7 @@ public class PointsRecordServiceImpl extends ServiceImpl<PointsRecordMapper, Poi
         PointsRecord record = null;
         //1.查询该类型积分是否有当日上限
         if(type.getMaxPoints() > 0){
-            //1.1查询该用户当月此类型积分获取是否上限
+            //1.1查询该用户当日此类型积分获取是否上限
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startTime = DateUtils.getDayStartTime(now);
             LocalDateTime endTime = DateUtils.getDayEndTime(now);
@@ -69,20 +69,21 @@ public class PointsRecordServiceImpl extends ServiceImpl<PointsRecordMapper, Poi
             wrapper.between("create_time", startTime, endTime);
             wrapper.groupBy("user_id", "type");
             record = getOne(wrapper);
-            //1.2如果积分达到上限了，就结束
-            if(record != null || record.getPoints() == type.getMaxPoints()){
-                throw new BizIllegalException("已达到本人最大获取积分值");
+            if(record != null){
+                if(record.getPoints() >= type.getMaxPoints()){
+                    throw new BizIllegalException("已达到本人最大获取积分值");
+                }
+                //如果积分超过上限，则只记录上限值，避免积分累加溢出
+                if(record.getPoints() + points > type.getMaxPoints()){
+                    record.setPoints(type.getMaxPoints() - record.getPoints().intValue());
+                }else{
+                    //否则记录默认积分值
+                    record.setPoints(points);
+                }
             }
         }
         //2.mysql新增积分记录
-        record = new PointsRecord();
-        //如果积分超过上限，则只记录上限值，避免积分累加溢出
-        if(record.getPoints() + points > type.getMaxPoints()){
-            record.setPoints(type.getMaxPoints() - record.getPoints().intValue());
-        }else{
-            //否则记录默认积分值
-            record.setPoints(points);
-        }
+        if(record == null) record = new PointsRecord();
         record.setPoints(points);
         record.setType(type);
         record.setUserId(userId);
@@ -92,6 +93,7 @@ public class PointsRecordServiceImpl extends ServiceImpl<PointsRecordMapper, Poi
         LocalDate now = LocalDate.now();
         String yyyyMM = now.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String key = RedisConstants.POINTS_BORAD_KEY_PREFIX + yyyyMM;
+        System.out.println(key);
         redisTemplate.boundZSetOps(key).incrementScore(userId.toString(), points);
     }
 

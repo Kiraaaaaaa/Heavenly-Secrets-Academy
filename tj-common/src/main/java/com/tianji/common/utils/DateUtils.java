@@ -1,5 +1,6 @@
 package com.tianji.common.utils;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.LocalDateTimeUtil;
 
 import java.time.*;
@@ -101,7 +102,7 @@ public class DateUtils extends LocalDateTimeUtil {
 
 
 
-    public static LocalDate getMonthBegin(LocalDate date) {
+    public static LocalDate getMonthBegin(DateTime date) {
         return LocalDate.of(date.getYear(), date.getMonth(), 1);
     }
 

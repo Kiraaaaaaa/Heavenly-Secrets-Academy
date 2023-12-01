@@ -1,4 +1,6 @@
 package com.tinaji;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.tianji.api.cache.CategoryCache;
 import com.tianji.api.client.course.CatalogueClient;
@@ -10,26 +12,28 @@ import com.tianji.api.dto.user.UserDTO;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
+import com.tianji.common.utils.DateUtils;
 import com.tianji.common.utils.UserContext;
 import com.tianji.learning.LearningApplication;
 import com.tianji.learning.domain.po.InteractionQuestion;
 import com.tianji.learning.domain.po.InteractionReply;
+import com.tianji.learning.domain.po.PointsBoard;
 import com.tianji.learning.domain.po.PointsRecord;
 import com.tianji.learning.domain.vo.PointsStatisticsVO;
 import com.tianji.learning.domain.vo.QuestionAdminVO;
 import com.tianji.learning.enums.PointsRecordType;
-import com.tianji.learning.service.IInteractionQuestionService;
-import com.tianji.learning.service.IInteractionReplyService;
-import com.tianji.learning.service.IPointsRecordService;
+import com.tianji.learning.service.*;
 import com.tianji.learning.service.impl.PointsRecordServiceImpl;
 import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @SpringBootTest(classes = LearningApplication.class)
@@ -48,6 +52,11 @@ public class mainTest {
     CatalogueClient catalogueClient;
     @Autowired
     IPointsRecordService recordService;
+    @Autowired
+    IPointsBoardSeasonService seasonService;
+    @Autowired
+    IPointsBoardService pointsBoardService;
+
     @Test
     public void testx(){
         Long id = 1729192645861388290L;
@@ -170,4 +179,12 @@ public class mainTest {
         }
         System.out.println(list);
     }
+
+    @Test
+    public void test2(){
+        List<PointsBoard> list = pointsBoardService.lambdaQuery()
+                .list();
+        System.out.println(list);
+    }
+
 }
