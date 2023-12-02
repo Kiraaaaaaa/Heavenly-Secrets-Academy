@@ -90,7 +90,7 @@ public class PointsBoardServiceImpl extends ServiceImpl<PointsBoardMapper, Point
 
     @Override
     public void createPointsBoardTableBySeason(Integer season) {
-        // getBaseMapper().createPointsBoardTable(LearningConstants.POINTS_BOARD_TABLE_PREFIX + season);
+        getBaseMapper().createPointsBoardTable(LearningConstants.POINTS_BOARD_TABLE_PREFIX + season);
     }
 
     /**
