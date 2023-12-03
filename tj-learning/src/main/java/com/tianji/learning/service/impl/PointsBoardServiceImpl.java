@@ -58,7 +58,7 @@ public class PointsBoardServiceImpl extends ServiceImpl<PointsBoardMapper, Point
             pointsBoards = queryHistoryPoints(seasonId, query.getPageNo(), query.getPageSize());
         }else{
             //5.分页查询本赛季排行榜，fromRedis
-            pointsBoards = queryCurrentPoints(query.getPageNo(), query.getPageSize());
+            pointsBoards = queryCurrentPoints(query.getPageNo(), query.getPageSize(), false);
         }
         //6.封装List
         //6.1查询赛季排行榜成员名称
@@ -117,9 +117,11 @@ public class PointsBoardServiceImpl extends ServiceImpl<PointsBoardMapper, Point
      * @param pageSize 页码大小
      * @return 用户积分和排名信息列表
      */
-    private List<PointsBoard> queryCurrentPoints(@Min(value = 1, message = "页码不能小于1") Integer pageNo, @Min(value = 1, message = "每页查询数量不能小于1") Integer pageSize) {
+    @Override
+    public List<PointsBoard> queryCurrentPoints(@Min(value = 1, message = "页码不能小于1") Integer pageNo, @Min(value = 1, message = "每页查询数量不能小于1") Integer pageSize, boolean toDB) {
         //1.获取本月时间
-        LocalDate now = LocalDate.now();
+        //如果调用此方法是将此赛季持久化到mysql，那么查询的就是上个月的赛季排行榜数据
+        LocalDate now = toDB ? LocalDate.now().minusMonths(1) : LocalDate.now();
         String format = now.format(DateTimeFormatter.ofPattern("yyyyMM"));
         //2.构建key
         String key = RedisConstants.POINTS_BORAD_KEY_PREFIX + format;
