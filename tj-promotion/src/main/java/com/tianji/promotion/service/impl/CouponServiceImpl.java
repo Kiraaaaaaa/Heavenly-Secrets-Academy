@@ -5,16 +5,19 @@ import com.tianji.api.client.course.CategoryClient;
 import com.tianji.api.dto.course.CategoryBasicDTO;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
+import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.StringUtils;
 import com.tianji.promotion.domain.dto.CouponFormDTO;
+import com.tianji.promotion.domain.dto.CouponIssueFormDTO;
 import com.tianji.promotion.domain.po.Coupon;
 import com.tianji.promotion.domain.po.CouponScope;
 import com.tianji.promotion.domain.query.CouponQuery;
 import com.tianji.promotion.domain.vo.CouponDetailVO;
 import com.tianji.promotion.domain.vo.CouponPageVO;
 import com.tianji.promotion.domain.vo.CouponScopeVO;
+import com.tianji.promotion.enums.CouponStatus;
 import com.tianji.promotion.mapper.CouponMapper;
 import com.tianji.promotion.service.ICouponScopeService;
 import com.tianji.promotion.service.ICouponService;
@@ -22,6 +25,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -150,5 +154,56 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         CouponDetailVO couponDetailVO = BeanUtils.copyBean(coupon, CouponDetailVO.class);
         couponDetailVO.setScopes(vos);
         return couponDetailVO;
+    }
+
+    @Override
+    public void beginIssue(CouponIssueFormDTO dto) {
+        Integer termDays = dto.getTermDays();
+        LocalDateTime issueBeginTime = dto.getIssueBeginTime();
+        //1.获取该优惠券DB信息
+        Coupon one = getById(dto.getId());
+        if(one == null){
+            throw new BadRequestException("该优惠券不存在");
+        }
+        //如果状态不是待发放或者暂停，则抛出异常
+        if(one.getStatus()!=CouponStatus.DRAFT.getValue() && one.getStatus()!=CouponStatus.PAUSE.getValue()){
+            throw new BizIllegalException("只有待发放和暂停中的优惠券才能进行发放");
+        }
+        //2.判断优惠券是定时发放还是立即发放
+        LocalDateTime now = LocalDateTime.now();
+        //如果立即发放时间为空，或者立即发放时间小于等于当前时间，则设置立即发放时间为当前时间，注意isBefore如果比较的时间都一样，那么比较结果为false
+        boolean isNow = issueBeginTime == null || !issueBeginTime.isAfter(now) ? true : false;
+        /**
+         * 方式1，通过修改查出DB的对象属性来更新
+         */
+        if(isNow){
+            //立即发放
+            one.setIssueBeginTime(now);
+            one.setStatus(CouponStatus.ISSUING.getValue());
+        }else{
+            //定时发放
+            one.setIssueBeginTime(dto.getIssueBeginTime());
+            one.setStatus(CouponStatus.UN_ISSUE.getValue());
+        }
+        one.setIssueEndTime(dto.getIssueEndTime());
+        //3.判断优惠券是有效天数还是有效期
+        if(termDays != null){
+            one.setTermDays(termDays);
+        }else{
+            one.setTermBeginTime(dto.getTermBeginTime());
+            one.setTermEndTime(dto.getTermEndTime());
+        }
+        /**
+         * 方式2，只更新DB中需要更新的字段
+         */
+        // Coupon coupon = BeanUtils.copyBean(dto, Coupon.class);
+        // if(isNow){
+        //     coupon.setStatus(CouponStatus.ISSUING.getValue());
+        //     coupon.setIssueBeginTime(now);
+        // }else{
+        //     coupon.setStatus(CouponStatus.UN_ISSUE.getValue());
+        // }
+        //4.更新该优惠券
+        updateById(one);
     }
 }
