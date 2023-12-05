@@ -9,25 +9,36 @@ import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.StringUtils;
+import com.tianji.common.utils.UserContext;
 import com.tianji.promotion.domain.dto.CouponFormDTO;
 import com.tianji.promotion.domain.dto.CouponIssueFormDTO;
 import com.tianji.promotion.domain.po.Coupon;
 import com.tianji.promotion.domain.po.CouponScope;
+import com.tianji.promotion.domain.po.UserCoupon;
 import com.tianji.promotion.domain.query.CouponQuery;
 import com.tianji.promotion.domain.vo.CouponDetailVO;
 import com.tianji.promotion.domain.vo.CouponPageVO;
 import com.tianji.promotion.domain.vo.CouponScopeVO;
+import com.tianji.promotion.domain.vo.CouponVO;
 import com.tianji.promotion.enums.CouponStatus;
+import com.tianji.promotion.enums.ObtainType;
+import com.tianji.promotion.enums.UserCouponStatus;
 import com.tianji.promotion.mapper.CouponMapper;
 import com.tianji.promotion.service.ICouponScopeService;
 import com.tianji.promotion.service.ICouponService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.promotion.service.IExchangeCodeService;
+import com.tianji.promotion.service.IUserCouponService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -39,12 +50,16 @@ import java.util.stream.Collectors;
  * @since 2023-12-03
  */
 @Service
+@Slf4j
 @AllArgsConstructor
 public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> implements ICouponService {
     private final ICouponScopeService scopeService;
 
     private final CategoryClient categoryClient;
 
+    private final IExchangeCodeService exchangeCodeService;
+
+    private final IUserCouponService userCouponService;
     @Override
     public void saveCoupon(CouponFormDTO dto) {
         //1.保存优惠券
@@ -157,11 +172,15 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
+    @Transactional
     public void beginIssue(CouponIssueFormDTO dto) {
+        log.debug("发放优惠券，线程id{}，线程名{}",  Thread.currentThread().getId(),  Thread.currentThread().getName());
         Integer termDays = dto.getTermDays();
         LocalDateTime issueBeginTime = dto.getIssueBeginTime();
         //1.获取该优惠券DB信息
         Coupon one = getById(dto.getId());
+        //记录下未修改前状态是否为待发放
+        boolean isDraft = one.getStatus() == CouponStatus.DRAFT.getValue() ? true : false;
         if(one == null){
             throw new BadRequestException("该优惠券不存在");
         }
@@ -205,5 +224,76 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         // }
         //4.更新该优惠券
         updateById(one);
+        //4.如果优惠券状态为指定发放，且优惠券之前的状态为待发放，则生成兑换码
+        if(one.getObtainWay()== ObtainType.ISSUE && isDraft){
+            exchangeCodeService.asyncGenerateCode(one);
+        }
+    }
+
+    @Override
+    public List<CouponVO> queryIssuingCoupons() {
+        //1.查询所有发放中，且领取方式是手动领取的优惠券
+        List<Coupon> coupons = lambdaQuery()
+                .eq(Coupon::getStatus, CouponStatus.ISSUING.getValue())
+                .eq(Coupon::getObtainWay, ObtainType.PUBLIC)
+                .list();
+        if(CollUtils.isEmpty(coupons)){
+            return CollUtils.emptyList();
+        }
+        //2.查询用户已经领取的优惠券
+        Set<Long> ids = coupons.stream().map(Coupon::getId).collect(Collectors.toSet());
+        //获取当前用户所有发放中的优惠券
+        List<UserCoupon> userCoupons = userCouponService.lambdaQuery()
+                .eq(UserCoupon::getUserId, UserContext.getUser())
+                .in(UserCoupon::getCouponId, ids) //由于用户的优惠券表只有优惠券使用状态，但是这里需要查询发放状态的优惠券，所有用in
+                .list();
+
+        //2.1统计当前用户发放中【已经领取】的优惠券数量<优惠券id，已领取数量>
+
+        // 传统写法1
+        // Map<Long, Long> map = new HashMap<>();
+        // for (UserCoupon userCoupon : userCoupons) {
+        //     Long couponId = userCoupon.getCouponId();
+        //     if(map.containsKey(couponId)){
+        //         map.put(couponId, map.get(couponId)+1);
+        //     }else{
+        //         map.put(couponId, 1L);
+        //     }
+        // }
+        // 传统写法2
+        // Map<Long, Long> map = new HashMap<>();
+        // for (UserCoupon userCoupon : userCoupons) {
+        //     Long num = map.get(userCoupon.getCouponId());
+        //     if(num == null){
+        //         //没有则新增该优惠券统计数量
+        //         map.put(userCoupon.getCouponId(), 1L);
+        //     }else{
+        //         //已经有则累加该优惠券统计数量
+        //         map.put(userCoupon.getCouponId(), num+1);
+        //     }
+        // }
+
+        // stream流写法
+        Map<Long, Long> getCouponsMap = userCoupons.stream().collect(Collectors.groupingBy(UserCoupon::getCouponId, Collectors.counting()));
+        //2.2统计当前用户【已经领取且未使用】的优惠券数量<优惠券id，未使用数量>
+        Map<Long, Long> unUsedCouponsMap = userCoupons.stream()
+                .filter(c->c.getStatus() == UserCouponStatus.UNUSED)
+                .collect(Collectors.groupingBy(UserCoupon::getCouponId, Collectors.counting()));
+        //3.封装vos
+        List<CouponVO> vos = coupons.stream().map(i -> {
+            CouponVO couponVO = BeanUtils.copyBean(i, CouponVO.class);
+            //3.1设置该优惠券是否可以领取，优惠券已领取数量IssueNum < 优惠券总数量TotalNum，且用户领取数量 < 优惠券每个人限领数量
+            // 已领取数量，没有则为0
+            Long getNum = getCouponsMap.getOrDefault(i.getId(), 0L);
+            boolean avaliable = (i.getIssueNum() < i.getTotalNum() && getNum.intValue() < i.getUserLimit());
+            couponVO.setAvailable(avaliable);
+            //3.2该优惠券是否可以使用
+            // 已使用数量
+            boolean received = unUsedCouponsMap.getOrDefault(i.getId(), 0L) > 0;
+            couponVO.setReceived(received);
+            return couponVO;
+        }).collect(Collectors.toList());
+
+        return vos;
     }
 }

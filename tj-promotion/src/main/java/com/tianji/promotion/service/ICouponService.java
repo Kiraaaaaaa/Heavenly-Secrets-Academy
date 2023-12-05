@@ -8,6 +8,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.tianji.promotion.domain.query.CouponQuery;
 import com.tianji.promotion.domain.vo.CouponDetailVO;
 import com.tianji.promotion.domain.vo.CouponPageVO;
+import com.tianji.promotion.domain.vo.CouponVO;
+
+import java.util.List;
 
 /**
  * <p>
@@ -30,4 +33,7 @@ public interface ICouponService extends IService<Coupon> {
     CouponDetailVO queryById(Long id);
 
     void beginIssue(CouponIssueFormDTO dto);
+
+    List<CouponVO> queryIssuingCoupons();
+
 }
