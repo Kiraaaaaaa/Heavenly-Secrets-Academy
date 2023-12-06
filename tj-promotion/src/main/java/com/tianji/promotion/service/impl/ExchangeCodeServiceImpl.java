@@ -69,4 +69,11 @@ public class ExchangeCodeServiceImpl extends ServiceImpl<ExchangeCodeMapper, Exc
         //4.将该优惠券的兑换码总数存入redis中<优惠券id，兑换码最大id>
         redisTemplate.boundZSetOps(PromotionConstants.COUPON_RANGE_KEY).add(one.getId().toString(), increment);
     }
+
+    @Override
+    public boolean updateExchangeCodeMark(long id, boolean flag) {
+        String key = PromotionConstants.COUPON_CODE_MAP_KEY;
+        Boolean result = redisTemplate.opsForValue().setBit(key, id, flag);
+        return result!=null && result;
+    }
 }

@@ -13,4 +13,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IUserCouponService extends IService<UserCoupon> {
 
+    void receiveCoupon(Long couponId);
+
+    void exchangeCoupon(String code);
+
 }
