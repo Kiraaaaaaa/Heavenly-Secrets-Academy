@@ -8,7 +8,6 @@
 - master分支为功能完善的完整源代码
 - dev分支为基于init分支而正在开发的分支
 - [学习文档地址](http://[输入链接说明](https://b11et3un53m.feishu.cn/wiki/wikcnrigEuKkRaba6YaZubSuINf))
-- 如果需要视频的话可以私我
 
  **🌟对你有帮助的话麻烦点个星星🌟** 
 #### 项目简介
@@ -41,10 +40,10 @@
 
 学员核心业务
 学员的核心业务就是买课、学习，基本流程如下：
-![学员核心业务](https://sm.ms/image/Cr9VAPDc7S2EZpG.png "学员核心业务")
+![学员核心业务](https://s2.loli.net/2023/12/07/Cr9VAPDc7S2EZpG.png "学员核心业务")
 #### 我可以学到什么？
 相当于学到了三个项目
-![涉及领域](https://sm.ms/image/3SCQwN4kbY7TmhG.png "涉及领域")
+![涉及领域](https://s2.loli.net/2023/12/07/3SCQwN4kbY7TmhG.png "涉及领域")
 
  **可迁移的技术方案** 
 
