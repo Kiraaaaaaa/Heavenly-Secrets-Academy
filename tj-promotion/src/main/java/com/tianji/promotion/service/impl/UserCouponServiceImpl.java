@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.promotion.utils.CodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,8 +68,8 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
             throw new BadRequestException("优惠券已经抢完");
         }
         Long user = UserContext.getUser();
-        /*//优惠券是否达到领取上限
-        Integer userLimit = coupon.getUserLimit();
+        //优惠券是否达到领取上限
+        /*Integer userLimit = coupon.getUserLimit();
         Integer count = lambdaQuery()
                 .eq(UserCoupon::getCouponId, couponId)
                 .eq(UserCoupon::getUserId, user)
@@ -85,14 +86,26 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
 
         //MyBatis写法
         couponMapper.incrIssueNumById(couponId);*/
-        // 查询优惠券是否达到兑换上限
-        // 保存兑换记录
-        // 修改优惠券已兑换数量
-        checkAndCreateUserCoupon(user, coupon, null);
+
+
+        /*  查询优惠券是否达到兑换上限
+            保存兑换记录
+            修改优惠券已兑换数量  */
+        // 先获取锁，再开启事务，避免重复事务提交
+        synchronized (user.toString().intern()){ //由于Long类型有享元模式，所有先转换为String类型，然后intern()从常量池中取，相同id就为同一地址
+            // 这样调用方法，它的事务不会生效，因为不能在该类的非事务方法调用事务方法，这里相当于调用的原来方法
+            // checkAndCreateUserCoupon(user, coupon, null);
+
+            //所以，我们从AOP上下文对象中获取当前类的代理对象，然后强转为UserCouponServiceImpl类型
+            UserCouponServiceImpl userCouponService = (UserCouponServiceImpl) AopContext.currentProxy();
+            //此时代理对象就能执行被AOP代理过的方法，执行事务了
+            userCouponService.checkAndCreateUserCoupon(user, coupon, null);
+        }
+
     }
 
     @Override
-    @Transactional
+    // @Transactional (取消掉事务，将事务写在锁住的地方，优先获取锁再开启事务)
     public void exchangeCoupon(String code) {
         //1.检验参数
         if(code == null){
@@ -127,10 +140,11 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
             if(coupon == null){
                 throw new BizIllegalException("优惠券不存在");
             }
-            // 6.查询优惠券是否达到兑换上限
-            // 7.保存兑换记录
-            // 8.修改优惠券已兑换数量
-            // 9.更新兑换码数据
+
+            /*  6.查询优惠券是否达到兑换上限
+                7.保存兑换记录
+                8.修改优惠券已兑换数量
+                9.更新兑换码数据   */
             checkAndCreateUserCoupon(user, coupon, id);
 
         }catch (Exception e){
@@ -145,7 +159,31 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
      * @param user
      * @param coupon
      */
-    private void checkAndCreateUserCoupon(Long user, Coupon coupon, Long codeId) {
+    @Transactional // 先获取锁，再开启事务，避免重复事务提交
+    public void checkAndCreateUserCoupon(Long user, Coupon coupon, Long codeId) {
+
+        /**
+         * 经过测试，同一个user在高并发下，会出现领取优惠券数量超过限制数量的情况
+         * 解决方法：把以下增查改操作添加synchronized悲观锁代码块中，保证请求串行化，解决并发问题
+         */
+
+        /**
+         * 如果要让方法synchronized话也可以直接在方法上加上synchronized关键字，
+         * 但是这里不管是多位用户还是单个用户的并发都会调用这个方法，如果锁住所有调用，
+         * 那么会导致所有用户都要等待，所以，我们需要给synchronized一个条件，锁住的条件就是user相同的情况，
+         */
+        /*synchronized (user.toString().intern()){ //由于Long类型有享元模式，所有先转换为String类型，然后intern()从常量池中取同一地址
+            // 所有db操作
+        }*/
+
+        /*但是以上同样有问题，因为当前synchronized块是在事务里的，其实多个线程在开启事务的时候不会冲突，
+        假设此时同一用户有两个并发请求，同时开启了两个线程，这两个线程都开启了事务，
+        此时线程1在事务内获取到了锁，那么他会执行锁住的方法，线程2在事务内获取不到锁，
+        当线程1的锁释放后，但此时还未提交事务，此时线程2拿到锁，也执行了一次锁住的方法，
+        那么当线程1此时提交事务后，线程2又提交了一次，就重复提交了两次事务，这就冲突了，
+        所以，需要在事务提交之前，获取锁，当事务提交之后，释放锁，
+        代码就需要改造，将事务写在锁住的地方，优先获取锁再开启事务*/
+
         //优惠券是否达到领取上限
         Integer userLimit = coupon.getUserLimit();
         Integer count = lambdaQuery()
