@@ -25,6 +25,7 @@
         <module>tj-remark</module>
         <module>tj-xxljobDemo</module>
         <module>tj-promotion</module>
+        <module>tj-aopdemo</module>
     </modules>
     <packaging>pom</packaging>
 

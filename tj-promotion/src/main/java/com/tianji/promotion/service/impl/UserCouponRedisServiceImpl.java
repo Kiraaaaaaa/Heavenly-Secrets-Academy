@@ -1,6 +1,7 @@
 /*
 package com.tianji.promotion.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.BeanUtils;
@@ -13,11 +14,10 @@ import com.tianji.promotion.enums.ExchangeCodeStatus;
 import com.tianji.promotion.enums.UserCouponStatus;
 import com.tianji.promotion.mapper.CouponMapper;
 import com.tianji.promotion.mapper.UserCouponMapper;
-import com.tianji.promotion.service.ICouponService;
 import com.tianji.promotion.service.IExchangeCodeService;
 import com.tianji.promotion.service.IUserCouponService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.promotion.utils.CodeUtil;
+import com.tianji.promotion.utils.RedisLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
@@ -26,11 +26,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 */
 /**
  * <p>
- *     使用单机情况下的synchronized锁
+ *     手动实现单机下的redis分布式锁
  * 用户领取优惠券的记录，是真正使用的优惠券信息 服务实现类
  * </p>
  *
@@ -41,10 +42,11 @@ import java.time.LocalDateTime;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCoupon> implements IUserCouponService {
+public class UserCouponRedisServiceImpl extends ServiceImpl<UserCouponMapper, UserCoupon> implements IUserCouponService {
     private final CouponMapper couponMapper;
     private final StringRedisTemplate redisTemplate;
     private final IExchangeCodeService exchangeCodeService;
+
     @Override
     public void receiveCoupon(Long couponId) {
         //参数是否正确
@@ -100,16 +102,38 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
             修改优惠券已兑换数量  *//*
 
         // 先获取锁，再开启事务，避免重复事务提交
-        synchronized (user.toString().intern()){ //由于Long类型有享元模式，所有先转换为String类型，然后intern()从常量池中取，相同id就为同一地址
+        */
+/*synchronized (user.toString().intern()){ //由于Long类型有享元模式，所有先转换为String类型，然后intern()从常量池中取，相同id就为同一地址
             // 这样调用方法，它的事务不会生效，因为不能在该类的非事务方法调用事务方法，这里相当于调用的原来方法
             // checkAndCreateUserCoupon(user, coupon, null);
 
             //所以，我们从AOP上下文对象中获取当前类的代理对象，然后强转为UserCouponServiceImpl类型
-            UserCouponServiceImpl userCouponService = (UserCouponServiceImpl) AopContext.currentProxy();
+            UserCouponRedisServiceImpl userCouponService = (UserCouponRedisServiceImpl) AopContext.currentProxy();
             //此时代理对象就能执行被AOP代理过的方法，执行事务了
             userCouponService.checkAndCreateUserCoupon(user, coupon, null);
-        }
+        }*//*
 
+
+        //由于以上synchronized加入的是jvm的锁，这里采用redis分布式锁，但是注意此处的锁不是redisson的锁
+        String key = "lock:coupon:uid:" + user;
+        //1.创建锁对象
+        RedisLock lock = new RedisLock(key, redisTemplate);
+        //2.尝试获取锁
+        boolean isLocked = lock.tryLock(5, TimeUnit.SECONDS);
+        //3.判断是否获取到锁
+        if(!isLocked){
+            throw new BizIllegalException("请求太频繁");
+        }
+        //4.执行业务逻辑
+        try{
+            //从AOP上下文对象中获取当前类的代理对象，然后强转为UserCouponServiceImpl类型
+            UserCouponRedisServiceImpl userCouponService = (UserCouponRedisServiceImpl) AopContext.currentProxy();
+            //此时代理对象就能执行被AOP代理过的方法，执行事务
+            userCouponService.checkAndCreateUserCoupon(user, coupon, null);
+        }finally {
+            //5.释放锁
+            lock.unlock();
+        }
     }
 
     @Override
