@@ -19,7 +19,15 @@ public class MyLockFactory {
 
     public MyLockFactory(RedissonClient redissonClient) {
         this.lockHandlers = new EnumMap<>(MyLockType.class);
+        //由于是函数式接口，所以可以直接使用lambda表达式，或者称之为方法引用
         this.lockHandlers.put(RE_ENTRANT_LOCK, redissonClient::getLock);
+        //或者使用匿名内部类，效果是一样的
+       /* this.lockHandlers.put(RE_ENTRANT_LOCK, new Function<String, RLock>() {
+            @Override
+            public RLock apply(String name) {
+                return redissonClient.getLock(name);
+            }
+        });*/
         this.lockHandlers.put(FAIR_LOCK, redissonClient::getFairLock);
         this.lockHandlers.put(READ_LOCK, name -> redissonClient.getReadWriteLock(name).readLock());
         this.lockHandlers.put(WRITE_LOCK, name -> redissonClient.getReadWriteLock(name).writeLock());

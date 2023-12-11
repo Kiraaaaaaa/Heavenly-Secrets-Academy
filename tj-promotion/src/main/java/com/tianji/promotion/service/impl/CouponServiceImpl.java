@@ -6,10 +6,8 @@ import com.tianji.api.dto.course.CategoryBasicDTO;
 import com.tianji.common.domain.dto.PageDTO;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.exceptions.BizIllegalException;
-import com.tianji.common.utils.BeanUtils;
-import com.tianji.common.utils.CollUtils;
-import com.tianji.common.utils.StringUtils;
-import com.tianji.common.utils.UserContext;
+import com.tianji.common.utils.*;
+import com.tianji.promotion.constants.PromotionConstants;
 import com.tianji.promotion.domain.dto.CouponFormDTO;
 import com.tianji.promotion.domain.dto.CouponIssueFormDTO;
 import com.tianji.promotion.domain.po.Coupon;
@@ -31,6 +29,7 @@ import com.tianji.promotion.service.IExchangeCodeService;
 import com.tianji.promotion.service.IUserCouponService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +59,8 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     private final IExchangeCodeService exchangeCodeService;
 
     private final IUserCouponService userCouponService;
+
+    private final StringRedisTemplate redisTemplate;
     @Override
     public void saveCoupon(CouponFormDTO dto) {
         //1.保存优惠券
@@ -224,8 +225,19 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         // }
         //4.更新该优惠券
         updateById(one);
-        //4.如果优惠券状态为指定发放，且优惠券之前的状态为待发放，则生成兑换码
-        if(one.getObtainWay()== ObtainType.ISSUE && isDraft){
+
+        //5.如果是立即发放，将优惠券(优惠券id，开始领取时间，结束领取时间，可领取数量，限领数量)信息使用HASH结构存到Redis当中
+        if(isNow){
+            String key = PromotionConstants.COUPON_CACHE_KEY_PREFIX + one.getId();
+            //这几个固定的filed直接写死,toEpochMilli()将时间类型转为Long类型
+            redisTemplate.boundHashOps(key).put("issueBeginTime", String.valueOf(DateUtils.toEpochMilli(now)));
+            redisTemplate.boundHashOps(key).put("issueEndTime", String.valueOf(DateUtils.toEpochMilli(one.getIssueEndTime())));
+            redisTemplate.boundHashOps(key).put("totalNum", String.valueOf(one.getTotalNum()));
+            redisTemplate.boundHashOps(key).put("userLimit", String.valueOf(one.getUserLimit()));
+
+        }
+        //6.如果优惠券状态为指定发放，且优惠券之前的状态为待发放，则生成兑换码
+        if(one.getObtainWay() == ObtainType.ISSUE && isDraft){
             exchangeCodeService.asyncGenerateCode(one);
         }
     }

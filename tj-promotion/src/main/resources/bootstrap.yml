@@ -42,3 +42,8 @@ tj:
   auth:
     resource:
       enable: true
+
+  mq:
+    listener:
+      retry:
+        stateless: false # 如果mq的消费者启用了事务，那么需要设置mq的消费者为无状态
