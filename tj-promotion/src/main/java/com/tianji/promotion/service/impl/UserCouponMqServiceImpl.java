@@ -1,7 +1,10 @@
 package com.tianji.promotion.service.impl;
 
 import cn.hutool.core.bean.copier.CopyOptions;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.hash.Hash;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.api.dto.course.CourseDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.MqConstants;
 import com.tianji.common.exceptions.BadRequestException;
@@ -9,9 +12,15 @@ import com.tianji.common.exceptions.BizIllegalException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.UserContext;
+import com.tianji.promotion.config.PromotionConfig;
 import com.tianji.promotion.constants.PromotionConstants;
+import com.tianji.promotion.discount.Discount;
+import com.tianji.promotion.discount.DiscountStrategy;
+import com.tianji.promotion.domain.dto.CouponDiscountDTO;
+import com.tianji.promotion.domain.dto.OrderCourseDTO;
 import com.tianji.promotion.domain.dto.UserCouponDTO;
 import com.tianji.promotion.domain.po.Coupon;
+import com.tianji.promotion.domain.po.CouponScope;
 import com.tianji.promotion.domain.po.ExchangeCode;
 import com.tianji.promotion.domain.po.UserCoupon;
 import com.tianji.promotion.enums.CouponStatus;
@@ -20,11 +29,13 @@ import com.tianji.promotion.enums.MyLockType;
 import com.tianji.promotion.enums.UserCouponStatus;
 import com.tianji.promotion.mapper.CouponMapper;
 import com.tianji.promotion.mapper.UserCouponMapper;
+import com.tianji.promotion.service.ICouponScopeService;
 import com.tianji.promotion.service.IExchangeCodeService;
 import com.tianji.promotion.service.IUserCouponService;
 import com.tianji.promotion.utils.CodeUtil;
 import com.tianji.promotion.utils.MyLock;
 import com.tianji.promotion.utils.MyLockStrategy;
+import com.tianji.promotion.utils.PermuteUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
@@ -33,8 +44,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.naming.ldap.HasControls;
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.function.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -54,6 +72,8 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
     private final IExchangeCodeService exchangeCodeService;
     private final RedissonClient redissonClient;
     private final RabbitMqHelper mqHelper;
+    private final ICouponScopeService scopeService;
+    private final Executor discountSolutionExecutor;
     @Override
     // 由于不从db去查询优惠券信息和用户券记录了，所以参数user改为优惠券id
     @MyLock(name = "lock:coupon:uid:#{couponId}", myLockType = MyLockType.RE_ENTRANT_LOCK, myLockStrategy = MyLockStrategy.FAIL_AFTER_RETRY_TIMEOUT)
@@ -394,6 +414,7 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
             return;
         }
 
+        //todo 兑换兑换码还需要更新兑换码
         //如果是兑换码，则将DB中的兑换码状态置为已兑换
         /*if(codeId != null){
             exchangeCodeService.lambdaUpdate()
@@ -402,5 +423,223 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
                     .set(ExchangeCode::getUserId, user)
                     .update();
         }*/
+    }
+
+    @Override
+    public List<CouponDiscountDTO> findDiscountSolution(List<OrderCourseDTO> orderCourses) {
+        //1.查询用户可用的优惠券，条件：1.该用户2.用户券状态为未使用。查询表coupon和user_coupon，关联条件coupon_id。
+        //得到用户可使用的优惠券集合，所需字段：1.优惠券id，2.优惠券规则，3.优惠券折扣值，4.优惠券门槛，5.优惠券最大折金额，6.优惠券最大优惠金额，7.【用户券id】(返回给前端核销时使用的)
+        List<Coupon> coupons = baseMapper.queryMyCoupons(UserContext.getUser());
+
+        //2.初筛，过滤掉优惠券规则不满足的优惠券，条件：优惠券门槛不超过订单总价
+        //2.1计算订单总价
+        int totalNum = orderCourses.stream().mapToInt(OrderCourseDTO::getPrice).sum();
+        //2.1筛选出该订单可用券
+        List<Coupon> availableCoupons  = coupons.stream()
+                // 利用策略模式，根据优惠券类型获取对应的优惠券，并使用自身的canUse方法判断优惠券是否可用(比较订单总价与优惠券门槛)
+                .filter(c -> DiscountStrategy.getDiscount(c.getDiscountType()).canUse(totalNum, c))
+                .collect(Collectors.toList());
+        if(CollUtils.isEmpty(availableCoupons)){
+            return CollUtils.emptyList();
+        }
+        //3.细筛，筛选出优惠券的全排列组合，组合包含单券和多券两种组合，多券组合为某张优惠券下可用的课程id列表，单券组合为所有优惠券集合
+        //3.1获取到每一张可用的优惠券可用课程集合的集合
+        Map<Coupon, List<OrderCourseDTO>> availableCouponsMap = findAvailableCoupons(availableCoupons, orderCourses);
+        //通过优惠券可用分类细筛后如果没有可用的优惠券则直接返回
+        if(CollUtils.isEmpty(availableCouponsMap)){
+            return CollUtils.emptyList();
+        }
+        //计算优惠券的排列组合
+        //3.2从map取出keys即优惠券Set，转换为优惠券List，并覆盖初筛的可用券集合
+        availableCoupons = new ArrayList<>(availableCouponsMap.keySet());
+        //3.3获得方案集合，即对细筛优惠券集合进行全排列组合
+        List<List<Coupon>> solutions = PermuteUtil.permute(availableCoupons);
+        //3.4将所有单券也加入到全排列中，因为页面除了展示优惠券组合，还要展示单券
+        for (Coupon availableCoupon : availableCoupons) {
+            solutions.add(CollUtils.toList(availableCoupon));
+        }
+
+        //4.计算每一种方案的优惠情况
+        /*List<CouponDiscountDTO> list = new ArrayList<>();
+        for (List<Coupon> couponList : solutions) {
+            //参数：1.优惠券可优惠课程2.购买的课程集合3.优惠券排列方案
+            //返回值：该优惠券组合或者单券的优惠情况
+            list.add(calculateSolutionDiscount(availableCouponsMap, orderCourses, couponList));
+        }*/
+        //5.改造第4步为【多线程并行】查询每种方案
+        List<CouponDiscountDTO> list = Collections.synchronizedList(new ArrayList<>(solutions.size())); //线程安全的集合
+        CountDownLatch countDownLatch = new CountDownLatch(solutions.size());
+        for (List<Coupon> solution : solutions) {
+            CompletableFuture.supplyAsync(new Supplier<CouponDiscountDTO>() {
+                @Override
+                public CouponDiscountDTO get() {
+                    //参数：1.优惠券可优惠课程2.购买的课程集合3.优惠券排列方案
+                    //返回值：该优惠券组合或者单券的优惠情况
+                    CouponDiscountDTO dto = calculateSolutionDiscount(availableCouponsMap, orderCourses, solution);
+                    return dto;
+                }
+            }, discountSolutionExecutor).thenAccept(new Consumer<CouponDiscountDTO>() { //接收优惠情况，但无返回值
+                @Override
+                public void accept(CouponDiscountDTO couponDiscountDTO) {
+                    list.add(couponDiscountDTO); //将该优惠情况加入到优惠方案集合中
+                    // countDownLatch.countDown(); // 可加可不加，因为规定了超时两秒后取消阻塞
+                }
+            });
+        }
+        try{
+            //两秒都还没有结果就取消计数器阻塞状态继续执行
+            countDownLatch.await(2, TimeUnit.SECONDS);
+        }catch (InterruptedException e){
+            log.error("优惠券方案计算出现错误", e.getMessage());
+        }
+
+        //6.筛选出方案中最优解并返回
+        return findBestSolution(list);
+    }
+
+
+
+    /**
+     * 计算最优优惠券方案
+     * - 用券相同时，优惠金额最高的方案
+     * - 优惠金额相同时，用券最少的方案
+     * @param solutions 未经过最优筛选的优惠方案集合
+     * @return 返回最佳优惠方案集合
+     */
+    private List<CouponDiscountDTO> findBestSolution(List<CouponDiscountDTO> solutions) {
+        //1.创建两个优惠券记录哈希表
+        //分别记录：
+        // + 拥有相同优惠券id的方案中，记录下优惠最高的方案
+        // + 拥有相同优惠金额的方案中，记录下使用优惠券最少的方案
+        //<优惠券ids，最高优惠的方案>
+        Map<String, CouponDiscountDTO> moreDiscountMap = new HashMap<>();
+        //<优惠金额，最少优惠券的方案>
+        Map<Integer, CouponDiscountDTO> lessCouponMap = new HashMap<>();
+
+        //2.遍历优惠方案
+        for (CouponDiscountDTO solution : solutions) {
+            //2.1当前方案中的ids转string
+            String ids = solution.getIds().stream()
+                    //先升序排序ids
+                    .sorted(Comparator.comparing(Long::valueOf))
+                    //将每个id转为字符串
+                    .map(String::valueOf)
+                    //将每个id使用，号拼接
+                    .collect(Collectors.joining(","));
+            //2.2比较旧方案和当前方案的优惠金额
+            CouponDiscountDTO old = moreDiscountMap.get(ids);
+            //如果旧方案优惠金额大于等于当前方案优惠金额，则跳过当前方案(不更新)
+            if(old != null && old.getDiscountAmount() >= solution.getDiscountAmount()){
+                continue;
+            }
+            //2.3比较当前方案优惠金额的优惠券数量和map中记录的该金额的优惠券数量
+            old = lessCouponMap.get(solution.getDiscountAmount()); //取出该优惠券的金额，查询该金额旧的记录
+            if(old!= null && old.getIds().size()>1 && old.getIds().size() <= solution.getIds().size()){ //old.getIds().size()>1 为只比较组合，不比较单券
+                continue;
+            }
+            //2.4说明当前方案更优。更新两个MAP的记录
+            moreDiscountMap.put(ids, solution); //更新该ids的优惠方案
+            lessCouponMap.put(solution.getDiscountAmount(), solution); //更新该金额的优惠方案
+        }
+
+        //3.求moreDiscountMap和lessCouponMap中交集，得出最佳方案集合(去掉了solutions中ids重复的优惠方案，只取出优惠力度最大的其中一个方案)
+        Collection<CouponDiscountDTO> bestSolutions = CollUtil.intersection(moreDiscountMap.values(), lessCouponMap.values());
+        List<CouponDiscountDTO> latestBestSolutions = bestSolutions.stream()
+                //根据优惠金额倒序
+                .sorted(Comparator.comparing(CouponDiscountDTO::getDiscountAmount).reversed())
+                .collect(Collectors.toList());
+        return latestBestSolutions;
+    }
+
+    private CouponDiscountDTO calculateSolutionDiscount(Map<Coupon, List<OrderCourseDTO>> availableCouponsMap, List<OrderCourseDTO> orderCourses, List<Coupon> couponList) {
+        CouponDiscountDTO discountDTO = new CouponDiscountDTO();
+        //1.建立优惠明细映射<商品id，优惠金额>
+        Map<Long, Integer> courseDiscountMap = orderCourses.stream().collect(Collectors.toMap(OrderCourseDTO::getId, orderCourseDTO -> 0)); //初始化每个商品的已优惠金额为0
+        //2.计算该方案明细
+        //2.1.循环方案中的优惠券
+        for (Coupon coupon : couponList) {
+            //2.2.得到该优惠券可优惠的课程集合
+            List<OrderCourseDTO> courses = availableCouponsMap.get(coupon);
+            //2.3.计算目前【剩余】的可优惠课程的总价(课程原价-对应优惠明细)
+            int price = courses.stream().mapToInt(course -> course.getPrice() - courseDiscountMap.get(course.getId())).sum();
+            //2.4.判断总价是否符合该优惠券门槛
+            Discount discount = DiscountStrategy.getDiscount(coupon.getDiscountType()); //得到该优惠券的计算策略
+            if(!discount.canUse(price, coupon)) continue;
+            //2.5.计算总优惠金额
+            int discountPrice = discount.calculateDiscount(price, coupon);
+            //2.6.将总优惠金额分摊到每个可优惠课程的优惠明细中
+            //无返回值，只是更新了优惠明细映射，方便下张优惠券来计算优惠金额
+            calculateDetailDiscount(courseDiscountMap, orderCourses, discountPrice, price);
+            //2.8.保存该优惠券id到本方案中
+            discountDTO.getIds().add(coupon.getId());
+            //2.9.保存该优惠券规则到本方案中(从策略中取出该优惠券的规则)
+            discountDTO.getRules().add(discount.getRule(coupon));
+            //保存该方案的优惠金额(累加每张优惠券的优惠总金额)
+            discountDTO.setDiscountAmount(discountDTO.getDiscountAmount() + discountPrice); //不能写discountPrice，因为这是一张优惠券的优惠金额
+        }
+        return discountDTO;
+    }
+
+    /**
+     * 目的：优惠券使用后，得到每个可优惠课程的优惠明细
+     * 规则：除了最后一个商品的优惠明细为剩余优惠金额(可优惠总金额 - 前面商品已优惠金额)，其他商品的优惠明细为按比例计算
+     * @param courseDiscountMap 优惠明细映射
+     * @param orderCourses 可优惠课程集合
+     * @param discountPrice 可优惠金额
+     * @param price 可优惠课程的总价
+     */
+    private void calculateDetailDiscount(Map<Long, Integer> courseDiscountMap, List<OrderCourseDTO> orderCourses, int discountPrice, int price) {
+        //剩余待分配的优惠金额
+        int leftDiscountPrice = discountPrice;
+        //该课程的优惠明细
+        int detailDiscount = 0;
+        //循环每个可优惠课程，分配优惠明细
+        for (int i = 0; i < orderCourses.size(); i++) {
+            OrderCourseDTO course = orderCourses.get(i);
+            if(i == orderCourses.size() - 1){
+                //如果是最后一门可用课程，那就剩余的待分配优惠金额都给该课程。(为了保证优惠明细和优惠总金额相等)
+                detailDiscount = leftDiscountPrice;
+            }else{
+                //更新优惠明细映射
+                // 该课程优惠明细 = 该课程价格 / 可用课程总价 * 优惠金额 (有bug，前者都为int类型，相除为0)
+                // int detailDiscount = orderCourses.get(i).getPrice() / price * discountPrice;
+                // 该课程优惠明细 = 该课程价格 * 优惠金额 / 可用课程总价 (修改计算顺序)
+                detailDiscount = course.getPrice() * discountPrice * price;
+                //更新待分配的优惠金额
+                leftDiscountPrice -= detailDiscount;
+            }
+            //更新该课程的优惠明细(之前该课程的总优惠明细+当前优惠明细)
+            courseDiscountMap.put(course.getId(), courseDiscountMap.get(course.getId()) + detailDiscount);
+        }
+    }
+
+
+    private Map<Coupon, List<OrderCourseDTO>> findAvailableCoupons(List<Coupon> coupons, List<OrderCourseDTO> orderCourses) {
+        HashMap<Coupon, List<OrderCourseDTO>> map = new HashMap<>();
+        //1.循环可用优惠券，查询每张优惠券的课程集合
+        for (Coupon coupon : coupons) {
+            //提前初始化该券为所有课程可用，如果查出了可用的课程就设置为可用课程
+            List<OrderCourseDTO> availableCourses = orderCourses;
+            //2.查询每张优惠券的可用课程集合
+            //2.1判断该优惠券是否指定了类别
+            if(coupon.getSpecific()){
+                //2.2查询优惠券的可用类别集合
+                List<CouponScope> list = scopeService.lambdaQuery().eq(CouponScope::getCouponId, coupon.getId()).list();
+                List<Long> cateIds = list.stream().map(CouponScope::getBizId).collect(Collectors.toList());
+                //2.3查询优惠券的可用课程集合
+                availableCourses = orderCourses.stream().filter(orderCourseDTO -> cateIds.contains(orderCourseDTO.getCateId())).collect(Collectors.toList());
+            }
+            //如果该优惠券不存在可用课程，则直接跳过
+            if(CollUtils.isEmpty(availableCourses)) continue;
+            //3.要使用该优惠券，所以要计算该优惠券对于自身可用的课程可优惠多少钱
+            int price = availableCourses.stream().mapToInt(OrderCourseDTO::getPrice).sum();
+            //4.判断该优惠券是否满足使用条件
+            boolean canUse = DiscountStrategy.getDiscount(coupon.getDiscountType()).canUse(price, coupon);
+            if(canUse){
+                //5.如果优惠券是可用使用的，则将该券添加到结果集中
+                map.put(coupon, availableCourses);
+            }
+        }
+        return map;
     }
 }
