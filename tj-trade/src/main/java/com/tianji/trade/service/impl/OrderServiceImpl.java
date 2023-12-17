@@ -126,7 +126,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 5.删除购物车数据
         cartService.deleteCartByUserAndCourseIds(userId, placeOrderDTO.getCourseIds());
 
-        // 6.构建下单结果
+        // 6.核销优惠券
+        promotionClient.writeOffCoupon(couponIds);
+
+        // 7.构建下单结果
         return PlaceOrderResultVO.builder()
                 .orderId(orderId)
                 .payAmount(realAmount)

@@ -44,4 +44,10 @@ public class UserCouponController {
         return userCouponService.queryDiscountDetailByOrder(orderCouponDTO);
     }
 
+    @ApiOperation("核销指定优惠券")
+    @PutMapping("/use")
+    public void writeOffCoupon(@ApiParam("用户优惠券id集合") @RequestParam("couponIds") List<Long> userCouponIds){
+        userCouponService.writeOffCoupon(userCouponIds);
+    }
+
 }

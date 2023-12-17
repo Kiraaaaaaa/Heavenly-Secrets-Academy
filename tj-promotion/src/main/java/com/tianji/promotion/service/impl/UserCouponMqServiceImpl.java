@@ -9,6 +9,7 @@ import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
 import com.tianji.common.constants.MqConstants;
 import com.tianji.common.exceptions.BadRequestException;
 import com.tianji.common.exceptions.BizIllegalException;
+import com.tianji.common.exceptions.DbException;
 import com.tianji.common.utils.BeanUtils;
 import com.tianji.common.utils.CollUtils;
 import com.tianji.common.utils.UserContext;
@@ -520,6 +521,44 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
         //3.获取该方案优惠情况(优惠券使用顺序是前端传过来，所以是一个固定的方案)
         CouponDiscountDTO dto = calculateSolutionDiscount(availableCouponMap, orderCouponDTO.getCourseList(), availableCoupons);
         return dto;
+    }
+
+    /**
+     * 在下单完成后，完成优惠券核销
+     * @param userCouponIds 用户使用的优惠券id集合
+     */
+    @Override
+    public void writeOffCoupon(List<Long> userCouponIds) {
+        //1.校验将要核销的用户券集合是否存在
+        List<UserCoupon> userCoupons = listByIds(userCouponIds);
+        if(CollUtils.isEmpty(userCoupons)){
+            return;
+        }
+        //2.处理用户券集合
+        List<UserCoupon> coupons = userCoupons.stream()
+                // 防止错误调用方法，二次校验
+                .filter(coupon -> {
+                    //用户券必须存在
+                    if (coupon == null) return false;
+                    //用户券的状态必须为未使用
+                    if (coupon.getStatus() != UserCouponStatus.UNUSED) return false;
+                    //用户券的使用时间必须在当前时间可用
+                    LocalDateTime now = LocalDateTime.now();
+                    return !now.isBefore(coupon.getTermBeginTime()) && !now.isAfter(coupon.getTermEndTime());
+                })
+                //排除掉不可用的优惠券后，设置优惠券的状态为已使用
+                .map(coupon ->
+                        coupon.setStatus(UserCouponStatus.USED)
+                ).collect(Collectors.toList());
+        //3.修改用户券状态
+        boolean success = updateBatchById(coupons);
+        if(!success) return;
+        //4.修改优惠券已使用数量
+        List<Long> ids = coupons.stream().map(UserCoupon::getCouponId).collect(Collectors.toList());
+        int res = couponMapper.incrUsedNumByIds(ids, 1);
+        if(res < 1){
+            throw new DbException("更新优惠券使用数量失败");
+        }
     }
 
 

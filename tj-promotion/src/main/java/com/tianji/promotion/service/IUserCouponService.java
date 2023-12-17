@@ -31,4 +31,6 @@ public interface IUserCouponService extends IService<UserCoupon> {
     List<CouponDiscountDTO> findDiscountSolution(List<OrderCourseDTO> orderCourses);
 
     CouponDiscountDTO queryDiscountDetailByOrder(OrderCouponDTO orderCouponDTO);
+
+    void writeOffCoupon(List<Long> userCouponIds);
 }

@@ -4,6 +4,7 @@ import com.tianji.api.client.promotion.PromotionClient;
 import com.tianji.api.dto.promotion.CouponDiscountDTO;
 import com.tianji.api.dto.promotion.OrderCouponDTO;
 import com.tianji.api.dto.promotion.OrderCourseDTO;
+import com.tianji.common.exceptions.BizIllegalException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 
@@ -26,6 +27,11 @@ public class PromotionClientFallback implements FallbackFactory<PromotionClient>
             @Override
             public CouponDiscountDTO queryDiscountDetailByOrder(OrderCouponDTO orderCouponDTO) {
                 return null;
+            }
+
+            @Override
+            public void writeOffCoupon(List<Long> userCouponIds) {
+                throw new BizIllegalException(500, "核销优惠券异常", cause);
             }
         };
     }

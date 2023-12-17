@@ -6,7 +6,9 @@ import com.tianji.api.dto.promotion.OrderCouponDTO;
 import com.tianji.api.dto.promotion.OrderCourseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -18,4 +20,7 @@ public interface PromotionClient {
 
     @PostMapping("/user-coupons/discount")
     CouponDiscountDTO queryDiscountDetailByOrder(@RequestBody OrderCouponDTO orderCouponDTO);
+
+    @PutMapping("/user-coupons/use")
+    void writeOffCoupon(@RequestParam("couponIds") List<Long> userCouponIds);
 }
