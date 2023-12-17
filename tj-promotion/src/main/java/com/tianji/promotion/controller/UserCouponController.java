@@ -1,6 +1,7 @@
 package com.tianji.promotion.controller;
 
 import com.tianji.promotion.domain.dto.CouponDiscountDTO;
+import com.tianji.promotion.domain.dto.OrderCouponDTO;
 import com.tianji.promotion.domain.dto.OrderCourseDTO;
 import com.tianji.promotion.service.IUserCouponService;
 import io.swagger.annotations.Api;
@@ -35,6 +36,12 @@ public class UserCouponController {
     @PostMapping("/available")
     public List<CouponDiscountDTO> findDiscountSolution(@RequestBody List<OrderCourseDTO> orderCourses){
         return userCouponService.findDiscountSolution(orderCourses);
+    }
+
+    @ApiOperation("根据券方案计算订单优惠明细")
+    @PostMapping("/discount")
+    public CouponDiscountDTO queryDiscountDetailByOrder(@RequestBody OrderCouponDTO orderCouponDTO){
+        return userCouponService.queryDiscountDetailByOrder(orderCouponDTO);
     }
 
 }

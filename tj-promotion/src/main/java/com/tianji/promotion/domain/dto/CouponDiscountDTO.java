@@ -23,4 +23,8 @@ public class CouponDiscountDTO {
     private List<String> rules = new ArrayList<>();
     @ApiModelProperty("本订单最大优惠金额")
     private Integer discountAmount = 0;
+
+    @ApiModelProperty("优惠明细，key为课程id，value为课程优惠金额")
+    private Map<Long, Integer> discountDetail;
+
 }

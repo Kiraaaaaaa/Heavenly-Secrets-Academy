@@ -2,6 +2,7 @@ package com.tianji.api.client.promotion;
 
 import com.tianji.api.client.promotion.fallback.PromotionClientFallback;
 import com.tianji.api.dto.promotion.CouponDiscountDTO;
+import com.tianji.api.dto.promotion.OrderCouponDTO;
 import com.tianji.api.dto.promotion.OrderCourseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,4 +15,7 @@ import java.util.List;
 public interface PromotionClient {
     @PostMapping("/user-coupons/available")
     List<CouponDiscountDTO> findDiscountSolution(@RequestBody List<OrderCourseDTO> orderCourses);
+
+    @PostMapping("/user-coupons/discount")
+    CouponDiscountDTO queryDiscountDetailByOrder(@RequestBody OrderCouponDTO orderCouponDTO);
 }

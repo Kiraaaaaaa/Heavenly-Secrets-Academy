@@ -17,6 +17,7 @@ import com.tianji.promotion.constants.PromotionConstants;
 import com.tianji.promotion.discount.Discount;
 import com.tianji.promotion.discount.DiscountStrategy;
 import com.tianji.promotion.domain.dto.CouponDiscountDTO;
+import com.tianji.promotion.domain.dto.OrderCouponDTO;
 import com.tianji.promotion.domain.dto.OrderCourseDTO;
 import com.tianji.promotion.domain.dto.UserCouponDTO;
 import com.tianji.promotion.domain.po.Coupon;
@@ -74,6 +75,7 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
     private final RabbitMqHelper mqHelper;
     private final ICouponScopeService scopeService;
     private final Executor discountSolutionExecutor;
+    private final UserCouponMapper userCouponMapper;
     @Override
     // 由于不从db去查询优惠券信息和用户券记录了，所以参数user改为优惠券id
     @MyLock(name = "lock:coupon:uid:#{couponId}", myLockType = MyLockType.RE_ENTRANT_LOCK, myLockStrategy = MyLockStrategy.FAIL_AFTER_RETRY_TIMEOUT)
@@ -497,6 +499,28 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
         return findBestSolution(list);
     }
 
+    /**
+     * 下单时，查询用户使用的优惠券优惠情况(主要是优惠券明细，查询出来保存到订单项中)
+     * @param orderCouponDTO 订单服务传递来的：用户使用的优惠券id集合 + 订单中的课程列表
+     * @return CouponDiscountDTO 主要使用了：优惠券ids + 优惠券优惠明细(课程和优惠金额哈希表) + 总优惠金额
+     */
+    @Override
+    public CouponDiscountDTO queryDiscountDetailByOrder(OrderCouponDTO orderCouponDTO) {
+        //1.查询用户可用优惠券
+        List<Long> userCouponIds = orderCouponDTO.getUserCouponIds();
+        List<Coupon> availableCoupons = userCouponMapper.queryCouponByUserCouponIds(userCouponIds, UserCouponStatus.UNUSED);
+        if(CollUtils.isEmpty(availableCoupons)){
+            return null;
+        }
+        //2.查询优惠券将可用于哪些课程
+        Map<Coupon, List<OrderCourseDTO>> availableCouponMap = findAvailableCoupons(availableCoupons, orderCouponDTO.getCourseList());
+        if(CollUtils.isEmpty(availableCouponMap)){
+            return null;
+        }
+        //3.获取该方案优惠情况(优惠券使用顺序是前端传过来，所以是一个固定的方案)
+        CouponDiscountDTO dto = calculateSolutionDiscount(availableCouponMap, orderCouponDTO.getCourseList(), availableCoupons);
+        return dto;
+    }
 
 
     /**
@@ -555,6 +579,7 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
         CouponDiscountDTO discountDTO = new CouponDiscountDTO();
         //1.建立优惠明细映射<商品id，优惠金额>
         Map<Long, Integer> courseDiscountMap = orderCourses.stream().collect(Collectors.toMap(OrderCourseDTO::getId, orderCourseDTO -> 0)); //初始化每个商品的已优惠金额为0
+        discountDTO.setDiscountDetail(courseDiscountMap); //结果设置优惠明细
         //2.计算该方案明细
         //2.1.循环方案中的优惠券
         for (Coupon coupon : couponList) {
@@ -614,6 +639,13 @@ public class UserCouponMqServiceImpl extends ServiceImpl<UserCouponMapper, UserC
     }
 
 
+    /**
+     * 根据参数的优惠券集合，查询每个优惠券对于参数中的课程的可用情况
+     * 注意：如果优惠券没有指定类别，就设置为参数中的所有课程都可用
+     * @param coupons 优惠券集合
+     * @param orderCourses 课程集合
+     * @return 优惠券于可用课程的映射
+     */
     private Map<Coupon, List<OrderCourseDTO>> findAvailableCoupons(List<Coupon> coupons, List<OrderCourseDTO> orderCourses) {
         HashMap<Coupon, List<OrderCourseDTO>> map = new HashMap<>();
         //1.循环可用优惠券，查询每张优惠券的课程集合

@@ -1,6 +1,7 @@
 package com.tianji.promotion.service;
 
 import com.tianji.promotion.domain.dto.CouponDiscountDTO;
+import com.tianji.promotion.domain.dto.OrderCouponDTO;
 import com.tianji.promotion.domain.dto.OrderCourseDTO;
 import com.tianji.promotion.domain.dto.UserCouponDTO;
 import com.tianji.promotion.domain.po.Coupon;
@@ -29,4 +30,5 @@ public interface IUserCouponService extends IService<UserCoupon> {
 
     List<CouponDiscountDTO> findDiscountSolution(List<OrderCourseDTO> orderCourses);
 
+    CouponDiscountDTO queryDiscountDetailByOrder(OrderCouponDTO orderCouponDTO);
 }

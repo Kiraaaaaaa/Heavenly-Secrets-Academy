@@ -3,6 +3,7 @@ package com.tianji.promotion.mapper;
 import com.tianji.promotion.domain.po.Coupon;
 import com.tianji.promotion.domain.po.UserCoupon;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.tianji.promotion.enums.UserCouponStatus;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -34,4 +35,22 @@ public interface UserCouponMapper extends BaseMapper<UserCoupon> {
             "\tuc.`status` = 1 \n" +
             "\tAND uc.user_id = #{userId};")
     List<Coupon> queryMyCoupons(@Param("userId") Long userId);
+
+
+    @Select("SELECT\n" +
+            "\tc.id,\n" +
+            "\tc.discount_type,\n" +
+            "\tc.`specific`,\n" +
+            "\tc.discount_value,\n" +
+            "\tc.threshold_amount,\n" +
+            "\tc.max_discount_amount,\n" +
+            "\tuc.id AS creater \n" +
+            "FROM\n" +
+            "\tuser_coupon uc\n" +
+            "\tINNER JOIN coupon c ON uc.coupon_id = c.id \n" +
+            "WHERE\n" +
+            "\tuc.id IN (:userCouponIds) \n" +
+            "\tAND uc.STATUS = #{status}")
+    List<Coupon> queryCouponByUserCouponIds(
+            @Param("userCouponIds") List<Long> userCouponIds,@Param("status") UserCouponStatus status);
 }

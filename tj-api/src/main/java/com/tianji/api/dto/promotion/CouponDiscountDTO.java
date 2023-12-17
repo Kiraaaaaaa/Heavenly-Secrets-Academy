@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @ApiModel(description = "订单的可用优惠券及折扣信息")
@@ -22,4 +24,7 @@ public class CouponDiscountDTO {
     private List<String> rules = new ArrayList<>();
     @ApiModelProperty("本订单最大优惠金额")
     private Integer discountAmount = 0;
+
+    @ApiModelProperty("优惠明细，key为课程id，value为课程优惠金额")
+    private Map<Long, Integer> discountDetail = new HashMap<>();
 }

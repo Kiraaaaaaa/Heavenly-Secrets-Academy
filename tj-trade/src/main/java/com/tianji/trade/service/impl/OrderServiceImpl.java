@@ -8,6 +8,7 @@ import com.tianji.api.client.promotion.PromotionClient;
 import com.tianji.api.constants.CourseStatus;
 import com.tianji.api.dto.course.CourseSimpleInfoDTO;
 import com.tianji.api.dto.promotion.CouponDiscountDTO;
+import com.tianji.api.dto.promotion.OrderCouponDTO;
 import com.tianji.api.dto.promotion.OrderCourseDTO;
 import com.tianji.api.dto.trade.OrderBasicDTO;
 import com.tianji.common.autoconfigure.mq.RabbitMqHelper;
@@ -79,8 +80,26 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .map(CourseSimpleInfoDTO::getPrice).reduce(Integer::sum).orElse(0);
 
 
-        //2.2.计算优惠金额
-        order.setDiscountAmount(0);
+        //2.2.计算优惠相关信息
+        // order.setDiscountAmount(0);
+        //2.2.1.获取优惠券id集合
+        List<Long> couponIds = placeOrderDTO.getCouponIds();
+        //2.2.2.如果该订单使用了优惠券，则需要计算优惠信息
+        CouponDiscountDTO discount = null;
+        if(CollUtils.isNotEmpty(couponIds)){
+            //2.2.3.获取组装订单中的课程信息(课程id、三级分类、价格)
+            List<OrderCourseDTO> courseDTOList = courseInfos.stream()
+                    .map(c -> new OrderCourseDTO().setId(c.getId()).setCateId(c.getThirdCateId()).setPrice(c.getPrice()))
+                    .collect(Collectors.toList());
+            //2.2.4.获取当前订单使用优惠券后的优惠信息
+            discount = promotionClient.queryDiscountDetailByOrder(new OrderCouponDTO(couponIds, courseDTOList));
+            if(discount != null){
+                //2.2.5.设置折扣金额
+                order.setDiscountAmount(discount.getDiscountAmount());
+                //2.2.6.设置使用的优惠券id
+                order.setCouponIds(discount.getIds());
+            }
+        }
 
         Integer realAmount = totalAmount - order.getDiscountAmount();
         // 2.3.封装其它信息
@@ -96,7 +115,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 3.封装订单详情
         List<OrderDetail> orderDetails = new ArrayList<>(courseInfos.size());
         for (CourseSimpleInfoDTO courseInfo : courseInfos) {
-            orderDetails.add(packageOrderDetail(courseInfo, order));
+            //如果订单有优惠信息，并且该课程有优惠金额，就设置该课程的优惠金额，否则设置为0
+            int discountAmount = discount == null ? 0 : discount.getDiscountDetail().getOrDefault(courseInfo.getId(), 0);
+            orderDetails.add(packageOrderDetail(courseInfo, order, discountAmount));
         }
 
         // 4.写入数据库
@@ -164,7 +185,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setId(orderId);
 
         // 3.订单详情
-        OrderDetail detail = packageOrderDetail(courseInfo, order);
+        OrderDetail detail = packageOrderDetail(courseInfo, order, 0);
 
         // 4.写入数据库
         saveOrderAndDetails(order, CollUtils.singletonList(detail));
@@ -218,7 +239,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return vo;
     }
 
-    private OrderDetail packageOrderDetail(CourseSimpleInfoDTO courseInfo, Order order) {
+    private OrderDetail packageOrderDetail(CourseSimpleInfoDTO courseInfo, Order order, int discountAmount) {
         OrderDetail detail = new OrderDetail();
         detail.setUserId(order.getUserId());
         detail.setOrderId(order.getId());
@@ -228,7 +249,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         detail.setCoverUrl(courseInfo.getCoverUrl());
         detail.setName(courseInfo.getName());
         detail.setValidDuration(courseInfo.getValidDuration());
-        detail.setDiscountAmount(0);// TODO 计算优惠金额
+        detail.setDiscountAmount(discountAmount); //设置订单项的优惠金额
         detail.setRealPayAmount(courseInfo.getPrice() - detail.getDiscountAmount());
         return detail;
     }
