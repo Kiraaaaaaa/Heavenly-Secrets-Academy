@@ -6,8 +6,9 @@
 - 分支说明：
 - init分支包含最基础功能，刚开始开发从init分支拉取
 - master分支为功能完善的完整源代码
-- dev分支为基于init分支而正在开发的分支
+- dev分支为本人基于init分支学习并正在开发的分支(未完成)
 - [学习文档地址](https://b11et3un53m.feishu.cn/wiki/wikcnrigEuKkRaba6YaZubSuINf)
+- [配套资料](https://pan.baidu.com/s/1xH1_5-rp28TSpZz97fmdBg?pwd=1024)
 
  **🌟对你有帮助的话麻烦点个星星🌟** 
 #### 项目简介
