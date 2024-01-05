@@ -4,9 +4,9 @@
 我保留大量代码注释，也保留了测试文件，帮助大家更好的吸收，感兴趣的可以克隆参考学习，有不对的地方欢迎大家指正！！
 
 - 分支说明：
-- init分支包含最基础功能，刚开始开发从init分支拉取
-- master分支为功能完善的完整源代码
-- dev分支为基于init分支而正在开发的分支
+- init分支包含最基础功能，所有人刚开始开发都从init分支拉取
+- master分支为功能完善的完整源代码，作参考使用(这里未上传，配套资料中有)
+- dev分支为本人基于init分支学习并正在开发的分支(未完成)
 - [学习文档地址](https://b11et3un53m.feishu.cn/wiki/wikcnrigEuKkRaba6YaZubSuINf)
 - [配套资料](https://pan.baidu.com/s/1xH1_5-rp28TSpZz97fmdBg?pwd=1024)
 
